@@ -303,12 +303,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       Container(
                                         width: 120,
                                         height: 120,
+                                        padding: const EdgeInsets.all(3),
                                         decoration: BoxDecoration(
                                           shape: BoxShape.circle,
-                                          border: Border.all(
-                                            color: AppColors.border,
-                                            width: 3,
-                                          ),
+                                          color: AppColors.border,
                                           boxShadow: [
                                             BoxShadow(
                                               color: AppColors.red
@@ -317,17 +315,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                             ),
                                           ],
                                         ),
-                                        clipBehavior: Clip.antiAlias,
-                                        child: photoUrl != null &&
-                                                photoUrl.isNotEmpty
-                                            ? Image.network(
-                                                photoUrl,
-                                                fit: BoxFit.cover,
-                                                errorBuilder:
-                                                    (context, error, st) =>
-                                                        _avatarPlaceholder(),
-                                              )
-                                            : _avatarPlaceholder(),
+                                        child: ClipOval(
+                                          child: photoUrl != null &&
+                                                  photoUrl.isNotEmpty
+                                              ? Image.network(
+                                                  photoUrl,
+                                                  fit: BoxFit.cover,
+                                                  alignment: Alignment.center,
+                                                  filterQuality:
+                                                      FilterQuality.medium,
+                                                  errorBuilder:
+                                                      (context, error, st) =>
+                                                          _avatarPlaceholder(),
+                                                )
+                                              : _avatarPlaceholder(),
+                                        ),
                                       ),
                                       Container(
                                         padding: const EdgeInsets.all(8),
@@ -538,12 +540,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _avatarPlaceholder() {
-    return Container(
+    return const ColoredBox(
       color: AppColors.card,
-      child: const Icon(
-        Icons.person,
-        size: 56,
-        color: AppColors.muted,
+      child: Center(
+        child: Icon(
+          Icons.person,
+          size: 56,
+          color: AppColors.muted,
+        ),
       ),
     );
   }
@@ -725,10 +729,22 @@ class _DeleteAccountConfirmDialog extends StatelessWidget {
           maxWidth: 400,
           maxHeight: (h * 0.88).clamp(260.0, h),
         ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: AppColors.gradientBg,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: AppColors.border),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.35),
+                blurRadius: 28,
+                offset: const Offset(0, 12),
+              ),
+            ],
+          ),
+          clipBehavior: Clip.antiAlias,
           child: Material(
-            color: AppColors.surface,
+            color: Colors.transparent,
             child: SingleChildScrollView(
               child: Padding(
                 padding: const EdgeInsets.all(24),
@@ -872,7 +888,9 @@ class _DeleteAccountConfirmDialog extends StatelessWidget {
                                   ),
                                 ),
                                 child: Text(
-                                  S.tr('deleteAccount'),
+                                  S.tr('deleteAccountConfirmButton'),
+                                  textAlign: TextAlign.center,
+                                  maxLines: 2,
                                   style: const TextStyle(
                                     fontWeight: FontWeight.w700,
                                   ),

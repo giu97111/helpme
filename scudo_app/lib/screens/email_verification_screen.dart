@@ -9,6 +9,7 @@ import '../services/user_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_logo.dart';
 import '../widgets/language_sheet.dart';
+import '../widgets/logout_confirm_dialog.dart';
 
 /// Blocca l'app finché l'email non è verificata (Firebase Auth).
 class EmailVerificationScreen extends StatefulWidget {
@@ -89,15 +90,12 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen>
       if (fresh != null && !fresh.emailVerified) {
         await showDialog<void>(
           context: context,
-          builder: (ctx) => AlertDialog(
-            title: Text(S.tr('verifyEmailNotVerifiedTitle')),
-            content: Text(S.tr('verifyEmailNotVerifiedBody')),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(ctx).pop(),
-                child: Text(MaterialLocalizations.of(ctx).okButtonLabel),
-              ),
-            ],
+          barrierDismissible: true,
+          barrierColor: Colors.black.withValues(alpha: 0.72),
+          builder: (ctx) => _EmailStillPendingDialog(
+            title: S.tr('verifyEmailNotVerifiedTitle'),
+            body: S.tr('verifyEmailNotVerifiedBody'),
+            onDismiss: () => Navigator.of(ctx).pop(),
           ),
         );
       }
@@ -258,7 +256,11 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen>
                 TextButton(
                   onPressed: (_checkBusy || _resendBusy)
                       ? null
-                      : () => FirebaseAuth.instance.signOut(),
+                      : () async {
+                          final ok = await showLogoutConfirmDialog(context);
+                          if (!mounted || ok != true) return;
+                          await FirebaseAuth.instance.signOut();
+                        },
                   style: TextButton.styleFrom(
                     minimumSize: const Size.fromHeight(48),
                     padding: const EdgeInsets.symmetric(vertical: 8),
@@ -273,6 +275,142 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen>
                 const SizedBox(height: 24),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Popup “email non ancora verificata”: stesso sfondo della schermata di autenticazione.
+class _EmailStillPendingDialog extends StatelessWidget {
+  const _EmailStillPendingDialog({
+    required this.title,
+    required this.body,
+    required this.onDismiss,
+  });
+
+  final String title;
+  final String body;
+  final VoidCallback onDismiss;
+
+  @override
+  Widget build(BuildContext context) {
+    final ok = MaterialLocalizations.of(context).okButtonLabel;
+
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 400),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: AppColors.gradientBg,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: AppColors.border),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.35),
+                blurRadius: 28,
+                offset: const Offset(0, 12),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      AppColors.amber.withValues(alpha: 0.22),
+                      AppColors.red.withValues(alpha: 0.12),
+                    ],
+                  ),
+                  border: Border.all(
+                    color: AppColors.amber.withValues(alpha: 0.35),
+                    width: 1,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.amber.withValues(alpha: 0.12),
+                      blurRadius: 20,
+                      spreadRadius: 0,
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.mark_email_unread_outlined,
+                  size: 34,
+                  color: AppColors.amber,
+                ),
+              ),
+              const SizedBox(height: 22),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.white,
+                  height: 1.25,
+                  letterSpacing: -0.3,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                body,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: AppColors.muted.withValues(alpha: 0.95),
+                  fontSize: 15,
+                  height: 1.55,
+                ),
+              ),
+              const SizedBox(height: 26),
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: AppColors.gradientRedDeep,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.red.withValues(alpha: 0.35),
+                        blurRadius: 16,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: onDismiss,
+                      borderRadius: BorderRadius.circular(16),
+                      child: Center(
+                        child: Text(
+                          ok,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 16,
+                            color: AppColors.white,
+                            letterSpacing: 0.2,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),

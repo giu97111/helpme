@@ -286,26 +286,37 @@ class _AuthScreenState extends State<AuthScreen> {
                                           child: Container(
                                             width: 100,
                                             height: 100,
-                                            decoration: BoxDecoration(
+                                            padding: const EdgeInsets.all(2),
+                                            decoration: const BoxDecoration(
                                               shape: BoxShape.circle,
-                                              border: Border.all(
-                                                color: AppColors.border,
-                                                width: 2,
-                                              ),
-                                              color: AppColors.surface,
+                                              color: AppColors.border,
                                             ),
-                                            clipBehavior: Clip.antiAlias,
-                                            child: _signupPhotoBytes != null
-                                                ? Image.memory(
-                                                    _signupPhotoBytes!,
-                                                    fit: BoxFit.cover,
-                                                  )
-                                                : Icon(
-                                                    Icons.add_a_photo_outlined,
-                                                    size: 40,
-                                                    color: AppColors.muted
-                                                        .withValues(alpha: 0.8),
-                                                  ),
+                                            child: ClipOval(
+                                              child: ColoredBox(
+                                                color: AppColors.surface,
+                                                child: _signupPhotoBytes !=
+                                                        null
+                                                    ? Image.memory(
+                                                        _signupPhotoBytes!,
+                                                        fit: BoxFit.cover,
+                                                        alignment:
+                                                            Alignment.center,
+                                                        gaplessPlayback: true,
+                                                        filterQuality:
+                                                            FilterQuality
+                                                                .medium,
+                                                      )
+                                                    : Icon(
+                                                        Icons
+                                                            .add_a_photo_outlined,
+                                                        size: 40,
+                                                        color: AppColors.muted
+                                                            .withValues(
+                                                                alpha: 0.8,
+                                                            ),
+                                                      ),
+                                              ),
+                                            ),
                                           ),
                                         ),
                                         const SizedBox(height: 8),

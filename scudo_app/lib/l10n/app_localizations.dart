@@ -190,6 +190,11 @@ class S {
       'deleteAccountIrreversibleNote':
           'Non potrai recuperare l\'account. L\'azione non è reversibile.',
       'deleteAccountError': 'Impossibile eliminare l\'account. Riprova.',
+      'deleteAccountConfirmButton': 'Sì, elimina definitivamente',
+      'logoutConfirmTitle': 'Uscire dall\'account?',
+      'logoutConfirmBody':
+          'Verrai disconnesso dall\'app. Potrai accedere di nuovo quando vorrai.',
+      'logoutConfirmAction': 'Esci',
       'authErrorInvalidEmail': 'Indirizzo email non valido.',
       'authErrorWrongPassword': 'Password non corretta.',
       'authErrorUserNotFound': 'Nessun account con questa email.',
@@ -326,6 +331,11 @@ class S {
       'deleteAccountIrreversibleNote':
           'You won\'t be able to recover your account. This cannot be undone.',
       'deleteAccountError': 'Could not delete account. Try again.',
+      'deleteAccountConfirmButton': 'Yes, delete permanently',
+      'logoutConfirmTitle': 'Sign out?',
+      'logoutConfirmBody':
+          'You will be logged out of the app. You can sign in again anytime.',
+      'logoutConfirmAction': 'Sign out',
       'authErrorInvalidEmail': 'Invalid email address.',
       'authErrorWrongPassword': 'Incorrect password.',
       'authErrorUserNotFound': 'No account found for this email.',
@@ -465,6 +475,11 @@ class S {
       'deleteAccountIrreversibleNote':
           'No podrás recuperar la cuenta. Esta acción no se puede deshacer.',
       'deleteAccountError': 'No se pudo eliminar la cuenta. Inténtalo de nuevo.',
+      'deleteAccountConfirmButton': 'Sí, eliminar para siempre',
+      'logoutConfirmTitle': '¿Cerrar sesión?',
+      'logoutConfirmBody':
+          'Se cerrará la sesión en la app. Podrás volver a entrar cuando quieras.',
+      'logoutConfirmAction': 'Cerrar sesión',
       'authErrorInvalidEmail': 'Correo electrónico no válido.',
       'authErrorWrongPassword': 'Contraseña incorrecta.',
       'authErrorUserNotFound': 'No hay cuenta con este correo.',
@@ -604,6 +619,11 @@ class S {
       'deleteAccountIrreversibleNote':
           'Eine Wiederherstellung ist nicht möglich.',
       'deleteAccountError': 'Konto konnte nicht gelöscht werden.',
+      'deleteAccountConfirmButton': 'Ja, endgültig löschen',
+      'logoutConfirmTitle': 'Abmelden?',
+      'logoutConfirmBody':
+          'Du wirst aus der App abgemeldet. Du kannst dich jederzeit wieder anmelden.',
+      'logoutConfirmAction': 'Abmelden',
       'authErrorInvalidEmail': 'Ungültige E-Mail-Adresse.',
       'authErrorWrongPassword': 'Falsches Passwort.',
       'authErrorUserNotFound': 'Kein Konto mit dieser E-Mail.',

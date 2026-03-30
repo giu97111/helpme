@@ -11,6 +11,7 @@ import '../services/user_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/glass_container.dart';
 import '../widgets/language_sheet.dart';
+import '../widgets/logout_confirm_dialog.dart';
 import 'profile_screen.dart';
 import 'sos_active_screen.dart';
 import 'sos_countdown_screen.dart';
@@ -130,9 +131,9 @@ class _HomeScreenState extends State<HomeScreen>
                             ? ClipOval(
                                 child: Image.network(
                                   u.photoURL!,
-                                  width: 44,
-                                  height: 44,
                                   fit: BoxFit.cover,
+                                  alignment: Alignment.center,
+                                  filterQuality: FilterQuality.medium,
                                   errorBuilder:
                                       (context, error, stackTrace) =>
                                           const Icon(
@@ -219,7 +220,11 @@ class _HomeScreenState extends State<HomeScreen>
                   ),
                   IconButton(
                     icon: const Icon(Icons.logout, color: AppColors.muted),
-                    onPressed: () => FirebaseAuth.instance.signOut(),
+                    onPressed: () async {
+                      final ok = await showLogoutConfirmDialog(context);
+                      if (!context.mounted || ok != true) return;
+                      await FirebaseAuth.instance.signOut();
+                    },
                   ),
                 ],
               ),
