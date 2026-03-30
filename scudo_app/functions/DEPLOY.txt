@@ -1,0 +1,67 @@
+Server Scudo (Firebase Cloud Functions)
+========================================
+
+Implementazione: Cloud Functions **1ª gen** (regione europe-west1).
+Evita l’errore al primo deploy con **2ª gen** / Eventarc:
+  "Permission denied while using the Eventarc Service Agent"
+Se vedi quell’errore con altri progetti, riprova dopo 5–10 minuti oppure usa questo index.js (già 1ª gen).
+
+Prerequisiti
+- Piano **Blaze** su Firebase (obbligatorio per Functions)
+- firebase-tools: npm install -g firebase-tools
+- firebase login
+
+Deploy (dalla cartella scudo_app, dove c’è firebase.json)
+  cd /percorso/scudo_app
+  firebase use helpme-c8755
+  cd functions && npm install && cd ..
+  firebase deploy --only functions --project helpme-c8755
+
+Solo regole Firestore
+  firebase deploy --only firestore:rules
+
+Funzione
+  notifyNearbyOnEmergency — onCreate su emergencies/{id}
+  Invia FCM a utenti con lastLat/lastLng entro ~2000 m (escluso chi ha lanciato l’SOS), salvo modalità test broadcast_all.
+
+Test
+- Due dispositivi con posizione in users e fcmToken
+- SOS da uno → notifica all’altro
+
+Log (dopo un SOS dovresti vedere almeno la riga INVOKED)
+  firebase functions:log --only notifyNearbyOnEmergency
+  oppure Google Cloud Console → Logging → filtra:
+    resource.type="cloud_function"
+    resource.labels.function_name="notifyNearbyOnEmergency"
+
+Domanda durante il deploy: "How many days do you want to keep container images?"
+  Premi Invio per il default (1) o un numero basso per limitare costi Artifact Registry.
+
+Perché non vedo log quando lancio l’allarme?
+  - La funzione gira solo su **creazione** documento in emergencies (prima write). Se non compare "INVOKED", il trigger non parte: controlla che il deploy sia **1st Gen** riuscito e la regione europe-west1.
+  - Se compare INVOKED ma destinatari FCM: 0 / NESSUN destinatario: nessun altro utente in users ha fcmToken + lastLat/lastLng nel raggio (o solo un account). Per test da due telefoni lontani: firebase functions:config:set scudo.broadcast_all="true" poi firebase deploy --only functions (vedi commenti in functions/index.js).
+  - I log ERROR con Eventarc nel passato sono di un deploy **2ª gen** fallito; non sono il comportamento attuale della 1ª gen.
+
+Errore FCM: messaging/third-party-auth-error / "Request is missing required authentication credential"
+  - Su Google Cloud Console (progetto helpme-c8755) abilita l’API **Firebase Cloud Messaging API**:
+    https://console.cloud.google.com/apis/library/fcm.googleapis.com?project=helpme-c8755
+    Poi **Riabilita** o attendi qualche minuto e riprova un SOS.
+  - In **IAM**, al service account usato dalle Cloud Functions (spesso
+    PROJECT_ID@appspot.gserviceaccount.com oppure ...-compute@developer.gserviceaccount.com)
+    assicurati che abbia un ruolo che consente FCM, ad es. **Firebase Admin SDK Administrator Service Agent**
+    o **Firebase Cloud Messaging Admin** (se compare in elenco).
+  - **Cloud Run / Funzioni (2ª gen)**: in **Variabili d’ambiente** della funzione, se c’è
+    **GOOGLE_APPLICATION_CREDENTIALS** puntato a un path o a credenziali “utente” (gcloud),
+    **rimuovila**. Altrimenti l’Admin SDK non usa il service account della funzione e FCM può
+    fallire anche se Firestore funziona. Il codice attuale forza l’uso dell’ADC del runtime
+    cancellando quella variabile in esecuzione.
+  - Se l’errore resta: Firebase Console → Impostazioni progetto → Account di servizio →
+    **Genera nuova chiave privata** (firebase-adminsdk). Crea un secret in **Secret Manager**
+    o (solo per test) aggiungi variabile **FIREBASE_SERVICE_ACCOUNT_JSON** = contenuto JSON
+    della chiave (una riga o base64), poi rideploy. Non committare la chiave nel repo.
+  - Dopo modifiche IAM/API, ridistribuisci solo se necessario: di solito basta abilitare l’API.
+
+
+Build APK Flutter (deve essere nella cartella del progetto con pubspec.yaml)
+  cd /percorso/scudo_app
+  flutter build apk --release

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "370603378201",
+    "project_id": "helpme-c8755",
+    "storage_bucket": "helpme-c8755.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:370603378201:android:9f030aca86bf6eeac88c88",
+        "android_client_info": {
+          "package_name": "com.gio.helpme"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDxM-WaBwICVGPcFw7aTkka_rhyb7MZCzw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

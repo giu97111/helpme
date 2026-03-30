@@ -1,0 +1,5 @@
+{
+  "name": "Scudo - Emergenza",
+  "description": "Un'app di sicurezza personale che avvisa le persone nelle vicinanze in caso di pericolo.",
+  "requestFramePermissions": ["geolocation"]
+}
