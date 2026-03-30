@@ -79,7 +79,10 @@ function loadServiceAccountKeyFile() {
   }
 }
 
-/** True in produzione su GCP (1ª gen, 2ª gen, Cloud Run), false in emulatore locale. */
+/**
+ * True in produzione su GCP (1ª gen, 2ª gen, Cloud Run), false in emulatore locale.
+ * @return {boolean}
+ */
 function shouldStripGoogleApplicationCredentials() {
   if (process.env.FUNCTIONS_EMULATOR === 'true') return false;
   return Boolean(
@@ -107,6 +110,35 @@ function parseServiceAccountJsonFromEnv() {
 }
 
 initFirebaseAdmin();
+
+/**
+ * Project ID per FCM HTTP v1 (runtime GCP o fallback).
+ * @return {string}
+ */
+function getProjectId() {
+  return (
+    process.env.GCLOUD_PROJECT ||
+    process.env.GCP_PROJECT ||
+    admin.app().options.projectId ||
+    'helpme-c8755'
+  );
+}
+
+/** Conteggio utenti per la home (solo backend; le regole Firestore bloccano il count client). */
+exports.getPublicUserCount = functions
+    .region('europe-west1')
+    .https.onCall(async (data, context) => {
+      if (!context.auth) {
+        throw new functions.https.HttpsError(
+            'unauthenticated',
+            'Autenticazione richiesta.',
+        );
+      }
+      const db = admin.firestore();
+      const snap = await db.collection('users').count().get();
+      const count = snap.data().count;
+      return {count};
+    });
 
 /** Metri — abbassa in produzione se vuoi solo vicini stretti */
 const RADIUS_METERS = 2000;
@@ -154,9 +186,9 @@ exports.notifyNearbyOnEmergency = functions
 
       const victimUidRaw = data.userId;
       const victimUidStr =
-        victimUidRaw != null && String(victimUidRaw).trim() !== ''
-          ? String(victimUidRaw).trim()
-          : null;
+        victimUidRaw != null && String(victimUidRaw).trim() !== '' ?
+          String(victimUidRaw).trim() :
+          null;
       if (!victimUidStr) {
         console.warn('notifyNearbyOnEmergency: userId mancante, skip FCM');
         return;
@@ -185,8 +217,9 @@ exports.notifyNearbyOnEmergency = functions
       }
 
       if (broadcastAll) {
-        console.log(
-            'MODALITÀ TEST: broadcast_all=true → invio a tutti con FCM (ignora distanza)',
+        console.warn(
+            'ATTENZIONE: SCUDO_BROADCAST_ALL attivo → FCM a TUTTI gli utenti (ignora distanza). ' +
+          'Disattiva in produzione.',
         );
       } else {
         console.log(
@@ -197,26 +230,18 @@ exports.notifyNearbyOnEmergency = functions
       const db = admin.firestore();
       const usersSnap = await db.collection('users').get();
 
-      let totalOthers = 0;
-      let withToken = 0;
-      let withCoords = 0;
-      let minDist = Infinity;
-
       /** @type {string[]} */
       const tokens = [];
 
       usersSnap.forEach((doc) => {
         if (doc.id === victimUidStr) return;
-        totalOthers++;
 
         const u = doc.data();
         const token = u.fcmToken;
-        if (token && typeof token === 'string') withToken++;
 
         const lat = u.lastLat;
         const lng = u.lastLng;
         const hasCoords = typeof lat === 'number' && typeof lng === 'number';
-        if (hasCoords) withCoords++;
 
         if (!token || typeof token !== 'string') return;
 
@@ -228,7 +253,6 @@ exports.notifyNearbyOnEmergency = functions
         if (!hasCoords) return;
 
         const dist = haversineMeters(victimLat, victimLng, lat, lng);
-        if (dist < minDist) minDist = dist;
         if (dist <= RADIUS_METERS) {
           tokens.push(token);
         }
@@ -242,11 +266,6 @@ exports.notifyNearbyOnEmergency = functions
           victimFcmToken = vf.fcmToken;
         }
       }
-
-      console.log(
-          `DEBUG utenti: altri=${totalOthers} con_fcmToken=${withToken} ` +
-      `con_lastLat_lng=${withCoords} distanza_min_m=${minDist === Infinity ? 'n/a' : Math.round(minDist)}`,
-      );
 
       const uniqueTokens = [...new Set(tokens)].filter(
           (t) => !victimFcmToken || t !== victimFcmToken,
@@ -272,13 +291,12 @@ exports.notifyNearbyOnEmergency = functions
       });
       const client = await auth.getClient();
       const {token: accessToken} = await client.getAccessToken();
+      if (!accessToken) {
+        console.error('notifyNearbyOnEmergency: access token OAuth assente');
+        return;
+      }
 
-      console.log(
-          `DEBUG: token length=${accessToken ? accessToken.length : 'NULL'}, ` +
-          `starts=${accessToken ? accessToken.substring(0, 12) + '…' : 'N/A'}`,
-      );
-
-      const projectId = 'helpme-c8755';
+      const projectId = getProjectId();
 
       let successCount = 0;
       let failureCount = 0;
@@ -342,9 +360,14 @@ exports.notifyNearbyOnEmergency = functions
               },
             }, (res) => {
               let body = '';
-              res.on('data', (chunk) => { body += chunk; });
+              res.on('data', (chunk) => {
+                body += chunk;
+              });
               res.on('end', () => {
-                resolve({status: res.statusCode, body});
+                resolve({
+                  status: res.statusCode,
+                  body,
+                });
               });
             });
             req.on('error', reject);

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:geolocator/geolocator.dart';
 
@@ -59,16 +60,16 @@ class UserService {
     return resolveDisplayName(user, null);
   }
 
-  /// URL foto profilo: Firestore `users` poi fallback su Firebase Auth (solo utente corrente).
+  /// URL foto profilo: solo per il proprio uid (le regole Firestore non espongono altri profili).
   static Future<String?> getUserPhotoUrl(String uid) async {
+    final u = FirebaseAuth.instance.currentUser;
+    if (u == null || u.uid != uid) return null;
     try {
       final doc = await _db.collection('users').doc(uid).get();
       final url = doc.data()?['photoUrl'] as String?;
       if (url != null && url.isNotEmpty) return url;
     } catch (_) {}
-    final u = FirebaseAuth.instance.currentUser;
-    if (u?.uid == uid) return u?.photoURL;
-    return null;
+    return u.photoURL;
   }
 
   static Future<void> updateLocation(String uid, Position pos) async {
@@ -86,14 +87,20 @@ class UserService {
     }, SetOptions(merge: true));
   }
 
+  /// Conteggio utenti tramite Cloud Function (il count client su `users` non è più consentito dalle regole).
   static Future<int> countUsers() async {
     try {
-      final a = await _db
-          .collection('users')
-          .count()
-          .get()
-          .timeout(const Duration(seconds: 12));
-      return a.count ?? 0;
+      final callable = FirebaseFunctions.instanceFor(region: 'europe-west1')
+          .httpsCallable('getPublicUserCount');
+      final result =
+          await callable.call().timeout(const Duration(seconds: 15));
+      final data = result.data;
+      if (data is Map) {
+        final c = data['count'];
+        if (c is int) return c;
+        if (c is num) return c.toInt();
+      }
+      return 0;
     } on TimeoutException {
       return 0;
     } catch (_) {

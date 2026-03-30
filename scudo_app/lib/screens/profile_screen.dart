@@ -503,7 +503,7 @@ class _ChangePasswordSheetState extends State<_ChangePasswordSheet> {
   }
 
   Future<void> _submit() async {
-    if (_new.text.length < 6) {
+    if (_new.text.length < 8) {
       setState(() => _error = S.tr('passwordTooShort'));
       return;
     }

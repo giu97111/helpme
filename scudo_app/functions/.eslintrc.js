@@ -6,9 +6,9 @@ module.exports = {
   parserOptions: {
     ecmaVersion: 2020,
   },
-  extends: ["eslint:recommended", "google"],
+  extends: ['eslint:recommended', 'google'],
   rules: {
-    "max-len": ["error", {code: 120}],
-    "require-jsdoc": "off",
+    'max-len': ['error', {code: 120}],
+    'require-jsdoc': 'off',
   },
 };

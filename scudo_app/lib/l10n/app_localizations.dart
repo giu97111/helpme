@@ -114,7 +114,7 @@ class S {
       'addPhotoOptional': 'Foto profilo (opzionale)',
       'confirmPassword': 'Conferma password',
       'passwordMismatch': 'Le password non coincidono.',
-      'passwordTooShort': 'La password deve essere di almeno 6 caratteri.',
+      'passwordTooShort': 'La password deve essere di almeno 8 caratteri.',
       'verifyEmailTitle': 'Verifica la tua email',
       'verifyEmailBody':
           'Ti abbiamo inviato un link a {email}. Apri la mail e tocca il link per attivare l\'account.',
@@ -147,6 +147,9 @@ class S {
       'changePasswordWrongCurrent': 'Password attuale non corretta.',
       'changePasswordOnlyEmail':
           'Disponibile solo se accedi con email e password.',
+      'userSafeTitle': 'Allarme terminato',
+      'userSafeMessage': '{name} è al sicuro.',
+      'ok': 'OK',
     },
 
     // ─── ENGLISH ───
@@ -226,7 +229,7 @@ class S {
       'addPhotoOptional': 'Profile photo (optional)',
       'confirmPassword': 'Confirm password',
       'passwordMismatch': 'Passwords do not match.',
-      'passwordTooShort': 'Password must be at least 6 characters.',
+      'passwordTooShort': 'Password must be at least 8 characters.',
       'verifyEmailTitle': 'Verify your email',
       'verifyEmailBody':
           'We sent a link to {email}. Open the email and tap the link to activate your account.',
@@ -258,6 +261,9 @@ class S {
       'changePasswordWrongCurrent': 'Current password is incorrect.',
       'changePasswordOnlyEmail':
           'Only available when you sign in with email and password.',
+      'userSafeTitle': 'Alarm ended',
+      'userSafeMessage': '{name} is safe.',
+      'ok': 'OK',
     },
 
     // ─── ESPAÑOL ───
@@ -339,7 +345,7 @@ class S {
       'addPhotoOptional': 'Foto de perfil (opcional)',
       'confirmPassword': 'Confirmar contraseña',
       'passwordMismatch': 'Las contraseñas no coinciden.',
-      'passwordTooShort': 'La contraseña debe tener al menos 6 caracteres.',
+      'passwordTooShort': 'La contraseña debe tener al menos 8 caracteres.',
       'verifyEmailTitle': 'Verifica tu correo',
       'verifyEmailBody':
           'Enviamos un enlace a {email}. Abre el correo y pulsa el enlace para activar la cuenta.',
@@ -372,6 +378,9 @@ class S {
       'changePasswordWrongCurrent': 'La contraseña actual no es correcta.',
       'changePasswordOnlyEmail':
           'Solo disponible si inicias sesión con correo y contraseña.',
+      'userSafeTitle': 'Alarma finalizada',
+      'userSafeMessage': '{name} está a salvo.',
+      'ok': 'OK',
     },
 
     // ─── DEUTSCH ───
@@ -453,7 +462,7 @@ class S {
       'addPhotoOptional': 'Profilfoto (optional)',
       'confirmPassword': 'Passwort bestätigen',
       'passwordMismatch': 'Die Passwörter stimmen nicht überein.',
-      'passwordTooShort': 'Das Passwort muss mindestens 6 Zeichen haben.',
+      'passwordTooShort': 'Das Passwort muss mindestens 8 Zeichen haben.',
       'verifyEmailTitle': 'E-Mail bestätigen',
       'verifyEmailBody':
           'Wir haben einen Link an {email} gesendet. Öffne die E-Mail und tippe auf den Link.',
@@ -486,6 +495,9 @@ class S {
       'changePasswordWrongCurrent': 'Aktuelles Passwort ist falsch.',
       'changePasswordOnlyEmail':
           'Nur bei Anmeldung mit E-Mail und Passwort möglich.',
+      'userSafeTitle': 'Alarm beendet',
+      'userSafeMessage': '{name} ist in Sicherheit.',
+      'ok': 'OK',
     },
   };
 }

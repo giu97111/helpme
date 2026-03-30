@@ -85,7 +85,7 @@ class _AuthScreenState extends State<AuthScreen> {
           setState(() => _error = S.tr('insertName'));
           return;
         }
-        if (_password.text.length < 6) {
+        if (_password.text.length < 8) {
           setState(() => _error = S.tr('passwordTooShort'));
           return;
         }

@@ -46,17 +46,22 @@ class NotificationService {
     }
 
     final messaging = FirebaseMessaging.instance;
-    await messaging.setForegroundNotificationPresentationOptions(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
-
+    // iOS: alert false così non duplichiamo la push di sistema; mostriamo noi la notifica locale con allegato (logo).
     if (Platform.isIOS) {
+      await messaging.setForegroundNotificationPresentationOptions(
+        alert: false,
+        badge: true,
+        sound: true,
+      );
       await messaging.requestPermission(alert: true, badge: true, sound: true);
     }
     if (Platform.isAndroid) {
       await FirebaseMessaging.instance.requestPermission();
+      await messaging.setForegroundNotificationPresentationOptions(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
     }
   }
 
@@ -79,32 +84,72 @@ class NotificationService {
     }
   }
 
+  /// File temporaneo per allegato immagine su iOS (UNNotificationAttachment).
+  static Future<String?> _logoTempPathForIos() async {
+    final bytes = _notificationLogoBytes;
+    if (bytes == null) return null;
+    final f = File('${Directory.systemTemp.path}/scudo_push_logo.jpg');
+    await f.writeAsBytes(bytes, flush: true);
+    return f.path;
+  }
+
   static void onForegroundMessage(void Function(RemoteMessage) handler) {
     FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
       final n = message.notification;
-      final android = message.notification?.android;
-      if (n != null && android != null && Platform.isAndroid) {
+      if (n == null) {
+        handler(message);
+        return;
+      }
+
+      final id = message.hashCode;
+
+      if (Platform.isAndroid) {
+        if (message.notification?.android != null) {
+          await _local.show(
+            id,
+            n.title,
+            n.body,
+            NotificationDetails(
+              android: AndroidNotificationDetails(
+                _androidChannel.id,
+                _androidChannel.name,
+                channelDescription: _androidChannel.description,
+                importance: Importance.max,
+                priority: Priority.high,
+                icon: 'ic_notification',
+                color: const Color(0xFFFF3B30),
+                largeIcon: _notificationLogoBytes != null
+                    ? ByteArrayAndroidBitmap(_notificationLogoBytes!)
+                    : null,
+              ),
+            ),
+            payload: message.data['emergencyId'],
+          );
+        }
+      } else if (Platform.isIOS) {
+        final logoPath = await _logoTempPathForIos();
         await _local.show(
-          android.hashCode,
+          id,
           n.title,
           n.body,
           NotificationDetails(
-            android: AndroidNotificationDetails(
-              _androidChannel.id,
-              _androidChannel.name,
-              channelDescription: _androidChannel.description,
-              importance: Importance.max,
-              priority: Priority.high,
-              icon: 'ic_notification',
-              color: const Color(0xFFFF3B30),
-              largeIcon: _notificationLogoBytes != null
-                  ? ByteArrayAndroidBitmap(_notificationLogoBytes!)
+            iOS: DarwinNotificationDetails(
+              presentAlert: true,
+              presentBanner: true,
+              presentList: true,
+              presentSound: true,
+              presentBadge: true,
+              attachments: logoPath != null
+                  ? <DarwinNotificationAttachment>[
+                      DarwinNotificationAttachment(logoPath),
+                    ]
                   : null,
             ),
           ),
           payload: message.data['emergencyId'],
         );
       }
+
       handler(message);
     });
   }

@@ -2,9 +2,9 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Profilo utente: ognuno scrive solo il proprio documento; tutti gli autenticati possono leggere (vicini / conteggi).
+    // Profilo utente: lettura/scrittura solo del proprio documento (email, token FCM, posizione non esposti agli altri client).
     match /users/{userId} {
-      allow read: if request.auth != null;
+      allow read: if request.auth != null && request.auth.uid == userId;
       allow create, update: if request.auth != null && request.auth.uid == userId;
       allow delete: if request.auth != null && request.auth.uid == userId;
     }
