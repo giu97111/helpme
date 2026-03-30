@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class S {
@@ -32,6 +33,39 @@ class S {
     var s = tr(key);
     params.forEach((k, v) => s = s.replaceAll('{$k}', v));
     return s;
+  }
+
+  /// Messaggio login/registrazione localizzato (niente codici tipo "[internal-error]").
+  static String authFirebaseError(FirebaseAuthException e) {
+    switch (e.code) {
+      case 'invalid-email':
+        return tr('authErrorInvalidEmail');
+      case 'wrong-password':
+        return tr('authErrorWrongPassword');
+      case 'user-not-found':
+        return tr('authErrorUserNotFound');
+      case 'invalid-credential':
+      case 'invalid-verification-code':
+      case 'invalid-verification-id':
+        return tr('authErrorInvalidCredential');
+      case 'too-many-requests':
+        return tr('authErrorTooManyRequests');
+      case 'network-request-failed':
+        return tr('authErrorNetwork');
+      case 'email-already-in-use':
+        return tr('authErrorEmailInUse');
+      case 'weak-password':
+        return tr('authErrorWeakPassword');
+      case 'user-disabled':
+        return tr('authErrorUserDisabled');
+      case 'operation-not-allowed':
+        return tr('authErrorOperationNotAllowed');
+      case 'internal-error':
+      case '8':
+        return tr('authErrorInternal');
+      default:
+        return tr('authErrorGeneric');
+    }
   }
 
   static const Map<String, Map<String, String>> _t = {
@@ -147,6 +181,28 @@ class S {
       'changePasswordWrongCurrent': 'Password attuale non corretta.',
       'changePasswordOnlyEmail':
           'Disponibile solo se accedi con email e password.',
+      'deleteAccount': 'Elimina account',
+      'deleteAccountConfirmTitle': 'Eliminare definitivamente l\'account?',
+      'deleteAccountConfirmIntro': 'Verranno rimossi in modo definitivo:',
+      'deleteAccountConfirmBullet1': 'Profilo e foto',
+      'deleteAccountConfirmBullet2': 'Dati salvati sui nostri server',
+      'deleteAccountConfirmBullet3': 'Accesso e notifiche push',
+      'deleteAccountIrreversibleNote':
+          'Non potrai recuperare l\'account. L\'azione non è reversibile.',
+      'deleteAccountError': 'Impossibile eliminare l\'account. Riprova.',
+      'authErrorInvalidEmail': 'Indirizzo email non valido.',
+      'authErrorWrongPassword': 'Password non corretta.',
+      'authErrorUserNotFound': 'Nessun account con questa email.',
+      'authErrorInvalidCredential': 'Email o password non corretti.',
+      'authErrorTooManyRequests': 'Troppi tentativi. Riprova tra poco.',
+      'authErrorNetwork': 'Errore di rete. Controlla la connessione.',
+      'authErrorEmailInUse': 'Questa email è già registrata.',
+      'authErrorWeakPassword': 'Password troppo debole.',
+      'authErrorUserDisabled': 'Questo account è stato disabilitato.',
+      'authErrorOperationNotAllowed':
+          'Accesso non consentito. Contatta il supporto.',
+      'authErrorInternal': 'Errore del servizio. Riprova tra poco.',
+      'authErrorGeneric': 'Accesso non riuscito. Riprova.',
       'userSafeTitle': 'Allarme terminato',
       'userSafeMessage': '{name} è al sicuro.',
       'ok': 'OK',
@@ -261,6 +317,28 @@ class S {
       'changePasswordWrongCurrent': 'Current password is incorrect.',
       'changePasswordOnlyEmail':
           'Only available when you sign in with email and password.',
+      'deleteAccount': 'Delete account',
+      'deleteAccountConfirmTitle': 'Delete your account permanently?',
+      'deleteAccountConfirmIntro': 'The following will be permanently removed:',
+      'deleteAccountConfirmBullet1': 'Profile and photo',
+      'deleteAccountConfirmBullet2': 'Data stored on our servers',
+      'deleteAccountConfirmBullet3': 'App access and push notifications',
+      'deleteAccountIrreversibleNote':
+          'You won\'t be able to recover your account. This cannot be undone.',
+      'deleteAccountError': 'Could not delete account. Try again.',
+      'authErrorInvalidEmail': 'Invalid email address.',
+      'authErrorWrongPassword': 'Incorrect password.',
+      'authErrorUserNotFound': 'No account found for this email.',
+      'authErrorInvalidCredential': 'Incorrect email or password.',
+      'authErrorTooManyRequests': 'Too many attempts. Try again shortly.',
+      'authErrorNetwork': 'Network error. Check your connection.',
+      'authErrorEmailInUse': 'This email is already registered.',
+      'authErrorWeakPassword': 'Password is too weak.',
+      'authErrorUserDisabled': 'This account has been disabled.',
+      'authErrorOperationNotAllowed':
+          'Sign-in not allowed. Contact support.',
+      'authErrorInternal': 'Service error. Try again shortly.',
+      'authErrorGeneric': 'Sign-in failed. Try again.',
       'userSafeTitle': 'Alarm ended',
       'userSafeMessage': '{name} is safe.',
       'ok': 'OK',
@@ -378,6 +456,28 @@ class S {
       'changePasswordWrongCurrent': 'La contraseña actual no es correcta.',
       'changePasswordOnlyEmail':
           'Solo disponible si inicias sesión con correo y contraseña.',
+      'deleteAccount': 'Eliminar cuenta',
+      'deleteAccountConfirmTitle': '¿Eliminar la cuenta para siempre?',
+      'deleteAccountConfirmIntro': 'Se eliminará de forma permanente:',
+      'deleteAccountConfirmBullet1': 'Perfil y foto',
+      'deleteAccountConfirmBullet2': 'Datos guardados en nuestros servidores',
+      'deleteAccountConfirmBullet3': 'Acceso y notificaciones',
+      'deleteAccountIrreversibleNote':
+          'No podrás recuperar la cuenta. Esta acción no se puede deshacer.',
+      'deleteAccountError': 'No se pudo eliminar la cuenta. Inténtalo de nuevo.',
+      'authErrorInvalidEmail': 'Correo electrónico no válido.',
+      'authErrorWrongPassword': 'Contraseña incorrecta.',
+      'authErrorUserNotFound': 'No hay cuenta con este correo.',
+      'authErrorInvalidCredential': 'Correo o contraseña incorrectos.',
+      'authErrorTooManyRequests': 'Demasiados intentos. Prueba más tarde.',
+      'authErrorNetwork': 'Error de red. Comprueba la conexión.',
+      'authErrorEmailInUse': 'Este correo ya está registrado.',
+      'authErrorWeakPassword': 'Contraseña demasiado débil.',
+      'authErrorUserDisabled': 'Esta cuenta está deshabilitada.',
+      'authErrorOperationNotAllowed':
+          'Inicio de sesión no permitido. Contacta con soporte.',
+      'authErrorInternal': 'Error del servicio. Prueba más tarde.',
+      'authErrorGeneric': 'No se pudo iniciar sesión. Inténtalo de nuevo.',
       'userSafeTitle': 'Alarma finalizada',
       'userSafeMessage': '{name} está a salvo.',
       'ok': 'OK',
@@ -495,6 +595,28 @@ class S {
       'changePasswordWrongCurrent': 'Aktuelles Passwort ist falsch.',
       'changePasswordOnlyEmail':
           'Nur bei Anmeldung mit E-Mail und Passwort möglich.',
+      'deleteAccount': 'Konto löschen',
+      'deleteAccountConfirmTitle': 'Konto endgültig löschen?',
+      'deleteAccountConfirmIntro': 'Folgendes wird dauerhaft entfernt:',
+      'deleteAccountConfirmBullet1': 'Profil und Foto',
+      'deleteAccountConfirmBullet2': 'Auf unseren Servern gespeicherte Daten',
+      'deleteAccountConfirmBullet3': 'Zugang und Push-Benachrichtigungen',
+      'deleteAccountIrreversibleNote':
+          'Eine Wiederherstellung ist nicht möglich.',
+      'deleteAccountError': 'Konto konnte nicht gelöscht werden.',
+      'authErrorInvalidEmail': 'Ungültige E-Mail-Adresse.',
+      'authErrorWrongPassword': 'Falsches Passwort.',
+      'authErrorUserNotFound': 'Kein Konto mit dieser E-Mail.',
+      'authErrorInvalidCredential': 'E-Mail oder Passwort falsch.',
+      'authErrorTooManyRequests': 'Zu viele Versuche. Kurz warten.',
+      'authErrorNetwork': 'Netzwerkfehler. Verbindung prüfen.',
+      'authErrorEmailInUse': 'Diese E-Mail ist bereits registriert.',
+      'authErrorWeakPassword': 'Passwort zu schwach.',
+      'authErrorUserDisabled': 'Dieses Konto wurde deaktiviert.',
+      'authErrorOperationNotAllowed':
+          'Anmeldung nicht erlaubt. Support kontaktieren.',
+      'authErrorInternal': 'Dienstfehler. Kurz später erneut versuchen.',
+      'authErrorGeneric': 'Anmeldung fehlgeschlagen. Erneut versuchen.',
       'userSafeTitle': 'Alarm beendet',
       'userSafeMessage': '{name} ist in Sicherheit.',
       'ok': 'OK',

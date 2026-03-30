@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
@@ -298,6 +299,61 @@ class _ResponderMapScreenState extends State<ResponderMapScreen> {
     });
   }
 
+  static const double _mapAvatarSize = 48;
+
+  /// Avatar tondo sulla mappa: l’immagine (anche quadrata in origine) viene
+  /// riempita e ritagliata in cerchio; niente doppio clip che distorce il layout.
+  Widget _mapRoundAvatar({
+    required String? photoUrl,
+    required Color accent,
+    required Widget fallback,
+  }) {
+    return Container(
+      width: _mapAvatarSize,
+      height: _mapAvatarSize,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.white, width: 3),
+        boxShadow: [
+          BoxShadow(
+            color: accent.withValues(alpha: 0.55),
+            blurRadius: 14,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: (photoUrl != null && photoUrl.isNotEmpty)
+          ? Image.network(
+              photoUrl,
+              width: _mapAvatarSize,
+              height: _mapAvatarSize,
+              fit: BoxFit.cover,
+              alignment: Alignment.center,
+              gaplessPlayback: true,
+              filterQuality: FilterQuality.medium,
+              loadingBuilder: (context, child, loadingProgress) {
+                if (loadingProgress == null) return child;
+                return ColoredBox(
+                  color: accent.withValues(alpha: 0.45),
+                  child: Center(
+                    child: SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white.withValues(alpha: 0.9),
+                      ),
+                    ),
+                  ),
+                );
+              },
+              errorBuilder: (context, error, stackTrace) => fallback,
+            )
+          : fallback,
+    );
+  }
+
   @override
   void dispose() {
     _emSub?.cancel();
@@ -387,83 +443,29 @@ class _ResponderMapScreenState extends State<ResponderMapScreen> {
                 ),
                 MarkerLayer(
                   markers: [
-                    // Vittima in pericolo: foto profilo se presente nell'emergenza, altrimenti icona
+                    // Vittima in pericolo: foto profilo (cerchio) se presente nell'emergenza
                     Marker(
                       point: victim,
-                      width: 64,
-                      height: 68,
+                      width: 76,
+                      height: 80,
                       child: Column(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Container(
-                            width: 44,
-                            height: 44,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 3),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppColors.red.withValues(alpha: 0.6),
-                                  blurRadius: 12,
+                          _mapRoundAvatar(
+                            photoUrl: _victimPhotoUrl,
+                            accent: AppColors.red,
+                            fallback: const DecoratedBox(
+                              decoration: BoxDecoration(
+                                gradient: AppColors.gradientRed,
+                              ),
+                              child: Center(
+                                child: Icon(
+                                  Icons.person_pin_circle,
+                                  color: Colors.white,
+                                  size: 26,
                                 ),
-                              ],
+                              ),
                             ),
-                            clipBehavior: Clip.antiAlias,
-                            child: _victimPhotoUrl != null
-                                ? ClipOval(
-                                    child: Stack(
-                                      fit: StackFit.expand,
-                                      children: [
-                                        const ColoredBox(
-                                          color: Color(0xFF7F1D1D),
-                                        ),
-                                        Positioned.fill(
-                                          child: Image.network(
-                                            _victimPhotoUrl!,
-                                            fit: BoxFit.cover,
-                                            alignment: Alignment.center,
-                                            gaplessPlayback: true,
-                                            filterQuality: FilterQuality.medium,
-                                            loadingBuilder:
-                                                (
-                                                  context,
-                                                  child,
-                                                  loadingProgress,
-                                                ) {
-                                                  if (loadingProgress == null) {
-                                                    return child;
-                                                  }
-                                                  return const SizedBox.expand();
-                                                },
-                                            errorBuilder:
-                                                (
-                                                  context,
-                                                  error,
-                                                  stackTrace,
-                                                ) => const ColoredBox(
-                                                  color: Color(0xFF7F1D1D),
-                                                  child: Center(
-                                                    child: Icon(
-                                                      Icons.person_pin_circle,
-                                                      color: Colors.white,
-                                                      size: 22,
-                                                    ),
-                                                  ),
-                                                ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  )
-                                : Container(
-                                    decoration: const BoxDecoration(
-                                      gradient: AppColors.gradientRed,
-                                    ),
-                                    child: const Icon(
-                                      Icons.person_pin_circle,
-                                      color: Colors.white,
-                                      size: 22,
-                                    ),
-                                  ),
                           ),
                           Container(
                             padding: const EdgeInsets.symmetric(
@@ -486,32 +488,28 @@ class _ResponderMapScreenState extends State<ResponderMapScreen> {
                         ],
                       ),
                     ),
-                    // Me marker
+                    // Tu (risponditore): stesso stile tondo con foto profilo account
                     if (me != null)
                       Marker(
                         point: me,
-                        width: 50,
-                        height: 50,
+                        width: 76,
+                        height: 80,
                         child: Column(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Container(
-                              width: 22,
-                              height: 22,
-                              decoration: BoxDecoration(
+                            _mapRoundAvatar(
+                              photoUrl:
+                                  FirebaseAuth.instance.currentUser?.photoURL,
+                              accent: AppColors.blue,
+                              fallback: const ColoredBox(
                                 color: AppColors.blue,
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: Colors.white,
-                                  width: 3,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: AppColors.blue.withValues(
-                                      alpha: 0.5,
-                                    ),
-                                    blurRadius: 8,
+                                child: Center(
+                                  child: Icon(
+                                    Icons.person,
+                                    color: Colors.white,
+                                    size: 26,
                                   ),
-                                ],
+                                ),
                               ),
                             ),
                             Container(

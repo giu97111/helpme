@@ -31,8 +31,8 @@ class NotificationService {
   static Future<void> init() async {
     await _local.initialize(
       const InitializationSettings(
-        // Stessa icona monocromatica delle FCM in background (drawable nativo).
-        android: AndroidInitializationSettings('@drawable/ic_notification'),
+        // Solo il nome risorsa (senza @drawable/): così getIdentifier() su Android trova il drawable.
+        android: AndroidInitializationSettings('ic_notification'),
         iOS: DarwinInitializationSettings(),
       ),
     );
@@ -82,6 +82,19 @@ class NotificationService {
       debugPrint('[Scudo FCM] token non disponibile: $e');
       return null;
     }
+  }
+
+  /// Dopo login/registrazione l’APNS può arrivare con ritardo: ritenta prima di arrendersi.
+  static Future<String?> getTokenIfAvailableWithRetry({
+    int maxAttempts = 6,
+    Duration step = const Duration(milliseconds: 400),
+  }) async {
+    for (var i = 0; i < maxAttempts; i++) {
+      final t = await getTokenIfAvailable();
+      if (t != null) return t;
+      await Future<void>.delayed(step * (i + 1));
+    }
+    return null;
   }
 
   /// File temporaneo per allegato immagine su iOS (UNNotificationAttachment).

@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 
 import '../l10n/app_localizations.dart';
+import '../services/account_deletion_guard.dart';
 import '../services/emergency_service.dart';
 import '../services/location_service.dart';
 import '../services/user_service.dart';
@@ -36,6 +37,7 @@ class _LoggedInShellState extends State<LoggedInShell> {
         .listen(
       (p) async {
         try {
+          if (AccountDeletionGuard.inProgress) return;
           final u = FirebaseAuth.instance.currentUser;
           if (u != null) await UserService.updateLocation(u.uid, p);
         } catch (e) {

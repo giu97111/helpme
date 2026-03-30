@@ -5,6 +5,8 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:geolocator/geolocator.dart';
 
+import 'account_deletion_guard.dart';
+
 class UserService {
   static final _db = FirebaseFirestore.instance;
 
@@ -19,6 +21,7 @@ class UserService {
   }
 
   static Future<void> syncProfile(User user, {String? fcmToken}) async {
+    if (AccountDeletionGuard.inProgress) return;
     await _db.collection('users').doc(user.uid).set({
       'email': user.email,
       'displayName': _displayName(user),
@@ -26,6 +29,19 @@ class UserService {
       'fcmToken': ?fcmToken,
       'lastUpdated': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
+  }
+
+  /// Scrive su `users` solo dopo verifica email (nessun profilo Firestore prima).
+  static Future<void> syncProfileIfVerified(User user, {String? fcmToken}) async {
+    if (!user.emailVerified) return;
+    await syncProfile(user, fcmToken: fcmToken);
+  }
+
+  /// Elimina profilo Firestore, storage foto e utente Auth (Cloud Function).
+  static Future<void> deleteAccountViaServer() async {
+    final callable = FirebaseFunctions.instanceFor(region: 'europe-west1')
+        .httpsCallable('deleteMyAccount');
+    await callable.call();
   }
 
   static Stream<DocumentSnapshot<Map<String, dynamic>>> userDocStream(
@@ -73,6 +89,7 @@ class UserService {
   }
 
   static Future<void> updateLocation(String uid, Position pos) async {
+    if (AccountDeletionGuard.inProgress) return;
     await _db.collection('users').doc(uid).set({
       'lastLat': pos.latitude,
       'lastLng': pos.longitude,
@@ -81,6 +98,7 @@ class UserService {
   }
 
   static Future<void> updateFcmToken(String uid, String token) async {
+    if (AccountDeletionGuard.inProgress) return;
     await _db.collection('users').doc(uid).set({
       'fcmToken': token,
       'lastUpdated': FieldValue.serverTimestamp(),

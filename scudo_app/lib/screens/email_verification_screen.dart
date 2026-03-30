@@ -4,6 +4,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
+import '../services/notification_service.dart';
+import '../services/user_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_logo.dart';
 import '../widgets/language_sheet.dart';
@@ -49,6 +51,11 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen>
     if (u == null) return;
     try {
       await u.reload();
+      final fresh = FirebaseAuth.instance.currentUser;
+      if (fresh != null && fresh.emailVerified) {
+        final t = await NotificationService.getTokenIfAvailableWithRetry();
+        await UserService.syncProfileIfVerified(fresh, fcmToken: t);
+      }
     } catch (_) {}
   }
 
@@ -74,6 +81,11 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen>
       await u.reload();
       if (!mounted) return;
       final fresh = FirebaseAuth.instance.currentUser;
+      if (fresh != null && fresh.emailVerified) {
+        final t = await NotificationService.getTokenIfAvailableWithRetry();
+        await UserService.syncProfileIfVerified(fresh, fcmToken: t);
+      }
+      if (!mounted) return;
       if (fresh != null && !fresh.emailVerified) {
         await showDialog<void>(
           context: context,
@@ -114,7 +126,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen>
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(e.message ?? e.code),
+          content: Text(S.authFirebaseError(e)),
           backgroundColor: AppColors.red,
         ),
       );

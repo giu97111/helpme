@@ -1,9 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../l10n/app_localizations.dart';
+import '../services/account_deletion_guard.dart';
 import '../services/profile_photo_service.dart';
 import '../services/user_service.dart';
 import '../theme/app_theme.dart';
@@ -123,6 +125,53 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final u = FirebaseAuth.instance.currentUser;
     if (u == null) return false;
     return u.providerData.any((p) => p.providerId == 'password');
+  }
+
+  Future<void> _confirmDeleteAccount() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.65),
+      builder: (ctx) => const _DeleteAccountConfirmDialog(),
+    );
+    if (ok != true || !mounted) return;
+    AccountDeletionGuard.inProgress = true;
+    setState(() => _loading = true);
+    try {
+      await UserService.deleteAccountViaServer();
+      try {
+        await FirebaseAuth.instance.signOut();
+      } catch (_) {}
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).popUntil((route) => route.isFirst);
+      }
+    } on FirebaseFunctionsException catch (e) {
+      debugPrint('[Profile] deleteAccount: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(S.tr('deleteAccountError')),
+            backgroundColor: AppColors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      return;
+    } catch (e) {
+      debugPrint('[Profile] deleteAccount: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(S.tr('deleteAccountError')),
+            backgroundColor: AppColors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      return;
+    } finally {
+      AccountDeletionGuard.inProgress = false;
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
   void _showChangePasswordSheet() {
@@ -418,6 +467,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   onTap: _loading ? null : _showChangePasswordSheet,
                                 ),
                               ),
+                              const SizedBox(height: 12),
+                              GlassContainer(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 8,
+                                  horizontal: 8,
+                                ),
+                                child: ListTile(
+                                  leading: const Icon(
+                                    Icons.delete_forever_outlined,
+                                    color: AppColors.redLight,
+                                  ),
+                                  title: Text(
+                                    S.tr('deleteAccount'),
+                                    style: const TextStyle(
+                                      color: AppColors.redLight,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  onTap: _loading ? null : _confirmDeleteAccount,
+                                ),
+                              ),
                               const SizedBox(height: 28),
                               SizedBox(
                                 height: 52,
@@ -636,6 +706,227 @@ class _ChangePasswordSheetState extends State<_ChangePasswordSheet> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _DeleteAccountConfirmDialog extends StatelessWidget {
+  const _DeleteAccountConfirmDialog();
+
+  @override
+  Widget build(BuildContext context) {
+    final h = MediaQuery.sizeOf(context).height;
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: 400,
+          maxHeight: (h * 0.88).clamp(260.0, h),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: Material(
+            color: AppColors.surface,
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 64,
+                        height: 64,
+                        decoration: BoxDecoration(
+                          color: AppColors.red.withValues(alpha: 0.14),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: AppColors.red.withValues(alpha: 0.35),
+                          ),
+                        ),
+                        child: const Icon(
+                          Icons.delete_forever_rounded,
+                          color: AppColors.redLight,
+                          size: 32,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      S.tr('deleteAccountConfirmTitle'),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.white,
+                        height: 1.25,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      S.tr('deleteAccountConfirmIntro'),
+                      style: const TextStyle(
+                        color: AppColors.muted,
+                        fontSize: 14,
+                        height: 1.45,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AppColors.card,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          _DeleteBullet(S.tr('deleteAccountConfirmBullet1')),
+                          const SizedBox(height: 10),
+                          _DeleteBullet(S.tr('deleteAccountConfirmBullet2')),
+                          const SizedBox(height: 10),
+                          _DeleteBullet(S.tr('deleteAccountConfirmBullet3')),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(top: 2),
+                          child: Icon(
+                            Icons.info_outline_rounded,
+                            size: 18,
+                            color: AppColors.amber.withValues(alpha: 0.95),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            S.tr('deleteAccountIrreversibleNote'),
+                            style: const TextStyle(
+                              color: AppColors.muted,
+                              fontSize: 13,
+                              height: 1.45,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: SizedBox(
+                            height: 52,
+                            child: OutlinedButton(
+                              onPressed: () =>
+                                  Navigator.of(context).pop(false),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: AppColors.white,
+                                side: const BorderSide(color: AppColors.border),
+                                padding: EdgeInsets.zero,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                              ),
+                              child: Center(child: Text(S.tr('cancel'))),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: SizedBox(
+                            height: 52,
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                gradient: AppColors.gradientRedDeep,
+                                borderRadius: BorderRadius.circular(16),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.red.withValues(
+                                      alpha: 0.3,
+                                    ),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: ElevatedButton(
+                                onPressed: () =>
+                                    Navigator.of(context).pop(true),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.transparent,
+                                  shadowColor: Colors.transparent,
+                                  padding: EdgeInsets.zero,
+                                  minimumSize: Size.zero,
+                                  tapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                ),
+                                child: Text(
+                                  S.tr('deleteAccount'),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DeleteBullet extends StatelessWidget {
+  const _DeleteBullet(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 7),
+          child: Container(
+            width: 6,
+            height: 6,
+            decoration: const BoxDecoration(
+              color: AppColors.redLight,
+              shape: BoxShape.circle,
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            text,
+            style: const TextStyle(
+              color: AppColors.white,
+              fontSize: 14,
+              height: 1.4,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

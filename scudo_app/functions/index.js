@@ -33,6 +33,30 @@ const path = require('path');
 const fs = require('fs');
 
 /**
+ * Bucket Storage del progetto (es. helpme-c8755.firebasestorage.app).
+ * Senza questo, admin.storage().bucket() in Cloud Functions fallisce con
+ * "Bucket name not specified or invalid" per i bucket *.firebasestorage.app.
+ * @return {string}
+ */
+function resolveStorageBucket() {
+  try {
+    if (process.env.FIREBASE_CONFIG) {
+      const cfg = JSON.parse(process.env.FIREBASE_CONFIG);
+      if (cfg.storageBucket && typeof cfg.storageBucket === 'string') {
+        return cfg.storageBucket;
+      }
+    }
+  } catch (e) {
+    console.warn(`resolveStorageBucket: ${e.message || e}`);
+  }
+  const pid =
+    process.env.GCLOUD_PROJECT ||
+    process.env.GCP_PROJECT ||
+    'helpme-c8755';
+  return `${pid}.firebasestorage.app`;
+}
+
+/**
  * Ordine di priorità per le credenziali:
  *   1. File service-account-key.json nella stessa cartella (deployato con la funzione)
  *   2. Variabile d'ambiente FIREBASE_SERVICE_ACCOUNT_JSON
@@ -41,17 +65,24 @@ const fs = require('fs');
 function initFirebaseAdmin() {
   if (admin.apps.length) return;
 
+  const storageBucket = resolveStorageBucket();
   const keyFromFile = loadServiceAccountKeyFile();
   if (keyFromFile) {
     console.log('initFirebaseAdmin: credenziale da service-account-key.json');
-    admin.initializeApp({credential: admin.credential.cert(keyFromFile)});
+    admin.initializeApp({
+      credential: admin.credential.cert(keyFromFile),
+      storageBucket,
+    });
     return;
   }
 
   const keyFromEnv = parseServiceAccountJsonFromEnv();
   if (keyFromEnv) {
     console.log('initFirebaseAdmin: credenziale da FIREBASE_SERVICE_ACCOUNT_JSON');
-    admin.initializeApp({credential: admin.credential.cert(keyFromEnv)});
+    admin.initializeApp({
+      credential: admin.credential.cert(keyFromEnv),
+      storageBucket,
+    });
     return;
   }
 
@@ -63,7 +94,10 @@ function initFirebaseAdmin() {
     );
   }
 
-  admin.initializeApp({credential: admin.credential.applicationDefault()});
+  admin.initializeApp({
+    credential: admin.credential.applicationDefault(),
+    storageBucket,
+  });
   console.log('initFirebaseAdmin: inizializzato con applicationDefault()');
 }
 
@@ -138,6 +172,70 @@ exports.getPublicUserCount = functions
       const snap = await db.collection('users').count().get();
       const count = snap.data().count;
       return {count};
+    });
+
+/**
+ * Elimina account: prima Auth così il client perde subito il token e non può
+ * riscrivere `users/{uid}` (merge) mentre la funzione gira. Poi Firestore e Storage.
+ * Il trigger cleanupUserOnAuthDelete fa anche lui pulizia se qualcosa resta.
+ */
+exports.deleteMyAccount = functions
+    .region('europe-west1')
+    .https.onCall(async (data, context) => {
+      if (!context.auth) {
+        throw new functions.https.HttpsError(
+            'unauthenticated',
+            'Autenticazione richiesta.',
+        );
+      }
+      const uid = context.auth.uid;
+      const db = admin.firestore();
+      try {
+        await admin.auth().deleteUser(uid);
+      } catch (e) {
+        console.error(`deleteMyAccount: auth.deleteUser ${e.message || e}`);
+        throw new functions.https.HttpsError(
+            'internal',
+            'Impossibile eliminare l\'account.',
+        );
+      }
+      try {
+        await db.collection('users').doc(uid).delete();
+      } catch (e) {
+        console.warn(`deleteMyAccount: users/${uid} ${e.message || e}`);
+      }
+      try {
+        const bucket = admin.storage().bucket(resolveStorageBucket());
+        await bucket.file(`profile_photos/${uid}/profile.jpg`).delete({
+          ignoreNotFound: true,
+        });
+      } catch (e) {
+        console.warn(`deleteMyAccount: storage ${e.message || e}`);
+      }
+      return {ok: true};
+    });
+
+/**
+ * Se un utente viene eliminato dalla console (solo Auth) o da un altro client,
+ * rimuove anche `users/{uid}` e la foto in Storage — evita documenti orfani.
+ */
+exports.cleanupUserOnAuthDelete = functions.auth.user().onDelete(
+    async (user) => {
+      const uid = user.uid;
+      const db = admin.firestore();
+      try {
+        await db.collection('users').doc(uid).delete();
+      } catch (e) {
+        console.warn(`cleanupUserOnAuthDelete: users/${uid} ${e.message || e}`);
+      }
+      try {
+        const bucket = admin.storage().bucket(resolveStorageBucket());
+        await bucket.file(`profile_photos/${uid}/profile.jpg`).delete({
+          ignoreNotFound: true,
+        });
+      } catch (e) {
+        console.warn(`cleanupUserOnAuthDelete: storage ${e.message || e}`);
+      }
     });
 
 /** Metri — abbassa in produzione se vuoi solo vicini stretti */
