@@ -24,7 +24,7 @@ Deploy
 Parametri (sostituiscono functions.config, deprecato): file functions/.env
   Copia functions/.env.example in functions/.env e modifica:
     SCUDO_BROADCAST_ALL=false
-    SCUDO_NOTIFICATION_IMAGE_URL=https://...   (URL pubblico del logo per FCM, opzionale)
+    SCUDO_NOTIFICATION_IMAGE_URL=https://...   (URL pubblico opzionale per immagine nelle push)
   .env non va committato (è in .gitignore).
   Al primo deploy il CLI può chiedere i valori dei parametri se .env manca.
 

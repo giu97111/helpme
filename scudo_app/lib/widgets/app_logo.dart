@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../branding.dart';
 import '../theme/app_theme.dart';
 
-/// Logo app (`assets/logo.jpg`), con fallback se l'asset manca.
+/// Logo app ([kAppLogoAsset]), con fallback se l'asset manca.
 class AppLogo extends StatelessWidget {
   const AppLogo({
     super.key,
@@ -13,7 +14,7 @@ class AppLogo extends StatelessWidget {
   final double size;
   final bool showShadow;
 
-  static const assetPath = 'assets/logo.jpg';
+  static const assetPath = kAppLogoAsset;
 
   @override
   Widget build(BuildContext context) {

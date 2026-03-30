@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -8,6 +11,7 @@ import '../services/location_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/geo.dart';
 import '../widgets/glass_container.dart';
+import '../widgets/user_safe_dialog.dart';
 import 'responder_map_screen.dart';
 
 class HelpAlertScreen extends StatefulWidget {
@@ -21,6 +25,20 @@ class HelpAlertScreen extends StatefulWidget {
 class _HelpAlertScreenState extends State<HelpAlertScreen>
     with SingleTickerProviderStateMixin {
   late final AnimationController _pulse;
+  StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _emSub;
+  Map<String, dynamic>? _activeDoc;
+  bool _emergencyEndedHandled = false;
+
+  void _handleEmergencyEnded(String displayName) {
+    if (_emergencyEndedHandled || !mounted) return;
+    _emergencyEndedHandled = true;
+    _emSub?.cancel();
+    _emSub = null;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      await showUserSafeCompletedDialog(context, displayName: displayName);
+    });
+  }
 
   @override
   void initState() {
@@ -29,10 +47,31 @@ class _HelpAlertScreenState extends State<HelpAlertScreen>
       vsync: this,
       duration: const Duration(milliseconds: 1200),
     )..repeat(reverse: true);
+
+    _emSub = EmergencyService.emergencyStream(widget.emergencyId).listen(
+      (doc) {
+        if (!mounted || _emergencyEndedHandled) return;
+        if (!doc.exists) {
+          _handleEmergencyEnded(S.tr('user'));
+          return;
+        }
+        final d = doc.data();
+        if (d == null) return;
+        final status = d['status'] as String? ?? 'active';
+        if (status != 'active') {
+          final name = d['displayName'] as String? ?? S.tr('user');
+          _handleEmergencyEnded(name);
+          return;
+        }
+        setState(() => _activeDoc = d);
+      },
+      onError: (_) {},
+    );
   }
 
   @override
   void dispose() {
+    _emSub?.cancel();
     _pulse.dispose();
     super.dispose();
   }
@@ -96,12 +135,9 @@ class _HelpAlertScreenState extends State<HelpAlertScreen>
                                     ],
                                   ),
                                 ),
-                                child: StreamBuilder(
-                                  stream: EmergencyService.emergencyStream(
-                                    widget.emergencyId,
-                                  ),
-                                  builder: (context, snap) {
-                                    final d = snap.data?.data();
+                                child: Builder(
+                                  builder: (context) {
+                                    final d = _activeDoc;
                                     if (d == null) {
                                       return const SizedBox(
                                         height: 200,

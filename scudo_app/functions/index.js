@@ -9,8 +9,9 @@
  * poi dalla cartella scudo_app (dove c’è firebase.json):
  *   firebase deploy --only functions
  *
- * Immagine grande nelle push: URL HTTPS pubblico in functions/.env
- *   SCUDO_NOTIFICATION_IMAGE_URL=https://...
+ * Immagine grande nelle push: il server FCM accetta solo un URL HTTPS (non file
+ * nell’app). Opzionale: SCUDO_NOTIFICATION_IMAGE_URL in .env (es. Firebase Storage).
+ * L’app usa sempre `assets/logo.jpg` per le notifiche locali in foreground.
  *
  * Deploy: sempre da scudo_app, altrimenti "No targets match --only functions".
  */
@@ -310,7 +311,7 @@ exports.notifyNearbyOnEmergency = functions
       } else {
         console.log(
             'notifyNearbyOnEmergency: nessun URL immagine (opzionale) — ' +
-          'solo icona scudo nelle push. Imposta scudo.notification_image_url per il logo.',
+          'solo icona nelle push; in app il logo resta assets/logo.jpg in foreground.',
         );
       }
 
@@ -424,6 +425,13 @@ exports.notifyNearbyOnEmergency = functions
       }
 
       for (let i = 0; i < uniqueTokens.length; i++) {
+        const dataFields = {
+          emergencyId: String(emergencyId),
+          type: 'sos',
+        };
+        if (notificationImageUrl) {
+          dataFields.imageUrl = String(notificationImageUrl);
+        }
         const payload = JSON.stringify({
           message: {
             token: uniqueTokens[i],
@@ -432,10 +440,7 @@ exports.notifyNearbyOnEmergency = functions
               body: `${displayName} potrebbe aver bisogno di te.`,
               image: notificationImageUrl || undefined,
             },
-            data: {
-              emergencyId: String(emergencyId),
-              type: 'sos',
-            },
+            data: dataFields,
             android: {
               priority: 'high',
               notification: androidNotification,

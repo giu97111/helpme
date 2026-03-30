@@ -9,6 +9,7 @@ import '../l10n/app_localizations.dart';
 import '../services/account_deletion_guard.dart';
 import '../services/emergency_service.dart';
 import '../services/location_service.dart';
+import '../services/notification_service.dart';
 import '../services/user_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/geo.dart';
@@ -151,7 +152,10 @@ class _LoggedInShellState extends State<LoggedInShell> {
                   badge: _nearbyEmergencyCount > 0
                       ? _nearbyEmergencyCount
                       : null,
-                  onTap: () => setState(() => _currentTab = 1),
+                  onTap: () {
+                    unawaited(NotificationService.clearLauncherBadge());
+                    setState(() => _currentTab = 1);
+                  },
                 ),
               ],
             ),

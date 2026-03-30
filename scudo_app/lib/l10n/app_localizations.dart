@@ -98,6 +98,15 @@ class S {
       'call112': 'Chiama il 112',
       'callAuthorities': 'Chiama 112 (Forze dell\'Ordine)',
       'imSafe': 'Sono al sicuro',
+      'sosBackCountdownTitle': 'Uscire senza inviare?',
+      'sosBackCountdownBody':
+          'Confermi di voler tornare alla home senza lanciare l\'allarme?',
+      'sosBackStay': 'Resta',
+      'sosBackLeaveWithoutAlarm': 'Esci senza inviare',
+      'sosBackActiveTitle': 'Allarme attivo',
+      'sosBackActiveBody':
+          'Per tornare alla home devi prima premere «Sono al sicuro» per chiudere l\'allarme. Il tasto indietro non può uscire da questa schermata.',
+      'sosBackUnderstood': 'OK',
       'helpRequest': 'RICHIESTA DI AIUTO',
       'approxDistance': 'A circa {n} metri da te',
       'calculatingDistance': 'Calcolo distanza…',
@@ -240,6 +249,15 @@ class S {
       'call112': 'Call 112',
       'callAuthorities': 'Call 112 (Emergency Services)',
       'imSafe': 'I\'m safe',
+      'sosBackCountdownTitle': 'Leave without sending?',
+      'sosBackCountdownBody':
+          'Go back to the home screen without sending the alarm?',
+      'sosBackStay': 'Stay',
+      'sosBackLeaveWithoutAlarm': 'Leave without sending',
+      'sosBackActiveTitle': 'Alarm active',
+      'sosBackActiveBody':
+          'To return home, tap «I\'m safe» first to end the alarm. The back button cannot leave this screen.',
+      'sosBackUnderstood': 'OK',
       'helpRequest': 'HELP REQUEST',
       'approxDistance': 'About {n} meters from you',
       'calculatingDistance': 'Calculating distance…',
@@ -383,6 +401,15 @@ class S {
       'call112': 'Llamar al 112',
       'callAuthorities': 'Llamar al 112 (Emergencias)',
       'imSafe': 'Estoy a salvo',
+      'sosBackCountdownTitle': '¿Salir sin enviar?',
+      'sosBackCountdownBody':
+          '¿Volver al inicio sin enviar la alarma?',
+      'sosBackStay': 'Quedarme',
+      'sosBackLeaveWithoutAlarm': 'Salir sin enviar',
+      'sosBackActiveTitle': 'Alarma activa',
+      'sosBackActiveBody':
+          'Para volver al inicio, pulsa primero «Estoy a salvo» para cerrar la alarma. El botón atrás no puede salir de esta pantalla.',
+      'sosBackUnderstood': 'OK',
       'helpRequest': 'SOLICITUD DE AYUDA',
       'approxDistance': 'A unos {n} metros de ti',
       'calculatingDistance': 'Calculando distancia…',
@@ -527,6 +554,15 @@ class S {
       'call112': '112 anrufen',
       'callAuthorities': '112 anrufen (Notruf)',
       'imSafe': 'Ich bin in Sicherheit',
+      'sosBackCountdownTitle': 'Ohne Senden verlassen?',
+      'sosBackCountdownBody':
+          'Zurück zum Startbildschirm, ohne den Alarm zu senden?',
+      'sosBackStay': 'Bleiben',
+      'sosBackLeaveWithoutAlarm': 'Ohne Senden verlassen',
+      'sosBackActiveTitle': 'Alarm aktiv',
+      'sosBackActiveBody':
+          'Um zur Startseite zu gehen, tippe zuerst auf «Ich bin in Sicherheit», um den Alarm zu beenden. Die Zurück-Taste kann diesen Bildschirm nicht verlassen.',
+      'sosBackUnderstood': 'OK',
       'helpRequest': 'HILFERUF',
       'approxDistance': 'Etwa {n} Meter von dir',
       'calculatingDistance': 'Entfernung wird berechnet…',

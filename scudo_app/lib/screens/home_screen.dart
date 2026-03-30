@@ -25,6 +25,8 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen>
     with SingleTickerProviderStateMixin {
   late final AnimationController _glowCtrl;
+  /// Evita più documenti in `emergencies` se l'utente tocca più volte il SOS.
+  bool _sosBusy = false;
 
   @override
   void initState() {
@@ -42,54 +44,60 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Future<void> _startSos() async {
-    final pos = await LocationService.getCurrent();
-    if (!mounted) return;
-    if (pos == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(S.tr('locationPermission')),
-          backgroundColor: AppColors.red,
-          behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    if (_sosBusy) return;
+    _sosBusy = true;
+    try {
+      final pos = await LocationService.getCurrent();
+      if (!mounted) return;
+      if (pos == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(S.tr('locationPermission')),
+            backgroundColor: AppColors.red,
+            behavior: SnackBarBehavior.floating,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+        return;
+      }
+
+      final go = await Navigator.of(context).push<bool>(
+        PageRouteBuilder<bool>(
+          pageBuilder: (context, animation, secondaryAnimation) =>
+              SosCountdownScreen(onCancel: () {}),
+          transitionsBuilder: (context, anim, secondaryAnimation, child) =>
+              FadeTransition(opacity: anim, child: child),
+          transitionDuration: const Duration(milliseconds: 300),
         ),
       );
-      return;
+      if (go != true || !mounted) return;
+
+      final u = FirebaseAuth.instance.currentUser;
+      if (u == null) return;
+      final name = await UserService.getResolvedDisplayName(u);
+      final nameForSos = name.isEmpty ? S.tr('user') : name;
+      final photoUrl = await UserService.getUserPhotoUrl(u.uid);
+
+      final id = await EmergencyService.startEmergency(
+        userId: u.uid,
+        displayName: nameForSos,
+        pos: pos,
+        photoUrl: photoUrl,
+      );
+      if (!mounted) return;
+      await Navigator.of(context).push<void>(
+        PageRouteBuilder<void>(
+          pageBuilder: (context, animation, secondaryAnimation) =>
+              SosActiveScreen(emergencyId: id),
+          transitionsBuilder: (context, anim, secondaryAnimation, child) =>
+              FadeTransition(opacity: anim, child: child),
+          transitionDuration: const Duration(milliseconds: 300),
+        ),
+      );
+    } finally {
+      _sosBusy = false;
     }
-
-    final go = await Navigator.of(context).push<bool>(
-      PageRouteBuilder<bool>(
-        pageBuilder: (context, animation, secondaryAnimation) =>
-            SosCountdownScreen(onCancel: () {}),
-        transitionsBuilder: (context, anim, secondaryAnimation, child) =>
-            FadeTransition(opacity: anim, child: child),
-        transitionDuration: const Duration(milliseconds: 300),
-      ),
-    );
-    if (go != true || !mounted) return;
-
-    final u = FirebaseAuth.instance.currentUser;
-    if (u == null) return;
-    final name = await UserService.getResolvedDisplayName(u);
-    final nameForSos = name.isEmpty ? S.tr('user') : name;
-    final photoUrl = await UserService.getUserPhotoUrl(u.uid);
-
-    final id = await EmergencyService.startEmergency(
-      userId: u.uid,
-      displayName: nameForSos,
-      pos: pos,
-      photoUrl: photoUrl,
-    );
-    if (!mounted) return;
-    await Navigator.of(context).push<void>(
-      PageRouteBuilder<void>(
-        pageBuilder: (context, animation, secondaryAnimation) =>
-            SosActiveScreen(emergencyId: id),
-        transitionsBuilder: (context, anim, secondaryAnimation, child) =>
-            FadeTransition(opacity: anim, child: child),
-        transitionDuration: const Duration(milliseconds: 300),
-      ),
-    );
   }
 
   @override

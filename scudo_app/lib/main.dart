@@ -186,6 +186,7 @@ class ScudoApp extends StatefulWidget {
 
 class _ScudoAppState extends State<ScudoApp> {
   StreamSubscription<User?>? _authForInitial;
+  StreamSubscription<User?>? _authClearBadgeSub;
   StreamSubscription<User?>? _userChangesForFcm;
   StreamSubscription<String>? _fcmTokenRefreshSub;
   RemoteMessage? _initialMessage;
@@ -225,6 +226,14 @@ class _ScudoAppState extends State<ScudoApp> {
       debugPrint('[Scudo] ERRORE notifiche: $e');
       debugPrint('[Scudo] stack: $st');
     }
+
+    _authClearBadgeSub?.cancel();
+    _authClearBadgeSub =
+        FirebaseAuth.instance.authStateChanges().listen((user) {
+      if (user == null) {
+        unawaited(NotificationService.clearLauncherBadge());
+      }
+    });
 
     // authStateChanges NON emette quando passi a email verificata (stesso utente loggato):
     // senza userChanges() il token FCM non veniva mai salvato dopo la verifica mail.
@@ -293,6 +302,7 @@ class _ScudoAppState extends State<ScudoApp> {
   @override
   void dispose() {
     _authForInitial?.cancel();
+    _authClearBadgeSub?.cancel();
     _userChangesForFcm?.cancel();
     _fcmTokenRefreshSub?.cancel();
     super.dispose();

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
+import '../widgets/sos_back_dialog.dart';
 
 class SosCountdownScreen extends StatefulWidget {
   const SosCountdownScreen({super.key, required this.onCancel});
@@ -46,140 +47,153 @@ class _SosCountdownScreenState extends State<SosCountdownScreen>
     super.dispose();
   }
 
+  Future<void> _onWillPop() async {
+    final leave = await showSosCountdownBackDialog(context);
+    if (leave == true && mounted) {
+      _t?.cancel();
+      widget.onCancel();
+      Navigator.of(context).pop(false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFF2D0A0A), Color(0xFF0D0202)],
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (bool didPop, dynamic result) {
+        if (didPop) return;
+        _onWillPop();
+      },
+      child: Scaffold(
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Color(0xFF2D0A0A), Color(0xFF0D0202)],
+            ),
           ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              const Spacer(flex: 2),
-              // Countdown with circular progress
-              Center(
-                child: SizedBox(
-                  width: 220,
-                  height: 220,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      // Progress ring
-                      AnimatedBuilder(
-                        animation: _progress,
-                        builder: (context, _) {
-                          return CustomPaint(
-                            size: const Size(220, 220),
-                            painter: _RingPainter(
-                                progress: _progress.value),
-                          );
-                        },
-                      ),
-                      // Glow behind number
-                      Container(
-                        width: 140,
-                        height: 140,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color:
-                                  AppColors.red.withValues(alpha: 0.3),
-                              blurRadius: 40,
-                              spreadRadius: 10,
-                            ),
-                          ],
+          child: SafeArea(
+            child: Column(
+              children: [
+                const Spacer(flex: 2),
+                // Countdown with circular progress
+                Center(
+                  child: SizedBox(
+                    width: 220,
+                    height: 220,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        // Progress ring
+                        AnimatedBuilder(
+                          animation: _progress,
+                          builder: (context, _) {
+                            return CustomPaint(
+                              size: const Size(220, 220),
+                              painter: _RingPainter(progress: _progress.value),
+                            );
+                          },
                         ),
-                      ),
-                      // Number
-                      TweenAnimationBuilder<double>(
-                        key: ValueKey(_n),
-                        tween: Tween(begin: 1.3, end: 1.0),
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeOutBack,
-                        builder: (context, scale, child) {
-                          return Transform.scale(
-                            scale: scale,
-                            child: child,
-                          );
-                        },
-                        child: Text(
-                          '$_n',
-                          style: const TextStyle(
-                            fontSize: 100,
-                            fontWeight: FontWeight.w900,
-                            color: AppColors.red,
-                            shadows: [
-                              Shadow(
-                                color: AppColors.redGlow,
+                        // Glow behind number
+                        Container(
+                          width: 140,
+                          height: 140,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.red.withValues(alpha: 0.3),
                                 blurRadius: 40,
+                                spreadRadius: 10,
                               ),
                             ],
                           ),
                         ),
-                      ),
-                    ],
+                        // Number
+                        TweenAnimationBuilder<double>(
+                          key: ValueKey(_n),
+                          tween: Tween(begin: 1.3, end: 1.0),
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeOutBack,
+                          builder: (context, scale, child) {
+                            return Transform.scale(scale: scale, child: child);
+                          },
+                          child: Text(
+                            '$_n',
+                            style: const TextStyle(
+                              fontSize: 100,
+                              fontWeight: FontWeight.w900,
+                              color: AppColors.red,
+                              shadows: [
+                                Shadow(
+                                  color: AppColors.redGlow,
+                                  blurRadius: 40,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 36),
-              Text(
-                S.tr('sendingAlarm'),
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.white,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 40),
-                child: Text(
-                  S.tr('allNearbyNotified'),
+                const SizedBox(height: 36),
+                Text(
+                  S.tr('sendingAlarm'),
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.white,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 40),
+                  child: Text(
+                    S.tr('allNearbyNotified'),
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
                       color: AppColors.red.withValues(alpha: 0.7),
                       fontSize: 15,
-                      height: 1.4),
-                ),
-              ),
-              const Spacer(flex: 3),
-              // Cancel button
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 32),
-                child: SizedBox(
-                  width: double.infinity,
-                  height: 56,
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      _t?.cancel();
-                      widget.onCancel();
-                      Navigator.of(context).pop(false);
-                    },
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.white,
-                      side: BorderSide(
-                          color:
-                              AppColors.red.withValues(alpha: 0.4)),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(999)),
+                      height: 1.4,
                     ),
-                    icon: const Icon(Icons.close),
-                    label: Text(S.tr('cancelAlarm'),
-                        style: const TextStyle(
-                            fontWeight: FontWeight.w700)),
                   ),
                 ),
-              ),
-              const SizedBox(height: 40),
-            ],
+                const Spacer(flex: 3),
+                // Cancel button
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 32),
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        _t?.cancel();
+                        widget.onCancel();
+                        Navigator.of(context).pop(false);
+                      },
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.white,
+                        side: BorderSide(
+                          color: AppColors.red.withValues(alpha: 0.4),
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                      ),
+                      icon: const Icon(Icons.close),
+                      label: Text(
+                        S.tr('cancelAlarm'),
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 40),
+              ],
+            ),
           ),
         ),
       ),

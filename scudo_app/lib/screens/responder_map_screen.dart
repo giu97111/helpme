@@ -13,6 +13,7 @@ import '../services/emergency_service.dart';
 import '../services/location_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/geo.dart';
+import '../widgets/user_safe_dialog.dart';
 
 class ResponderMapScreen extends StatefulWidget {
   const ResponderMapScreen({super.key, required this.emergencyId});
@@ -45,154 +46,7 @@ class _ResponderMapScreenState extends State<ResponderMapScreen> {
     final displayName = (_name == '…' || _name.isEmpty) ? S.tr('user') : _name;
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
-      await showDialog<void>(
-        context: context,
-        barrierDismissible: false,
-        barrierColor: Colors.black.withValues(alpha: 0.75),
-        builder: (ctx) {
-          void closeAndGoHome() {
-            Navigator.of(ctx).pop();
-            if (!mounted) return;
-            Navigator.of(context).popUntil((route) => route.isFirst);
-          }
-
-          return Dialog(
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            insetPadding: const EdgeInsets.symmetric(
-              horizontal: 28,
-              vertical: 32,
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(24),
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: AppColors.gradientBg,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: AppColors.border, width: 1),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
-                      child: Column(
-                        children: [
-                          Container(
-                            width: 88,
-                            height: 88,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: AppColors.surface,
-                              border: Border.all(
-                                color: AppColors.green.withValues(alpha: 0.45),
-                                width: 1.5,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppColors.green.withValues(
-                                    alpha: 0.22,
-                                  ),
-                                  blurRadius: 24,
-                                  offset: const Offset(0, 8),
-                                ),
-                              ],
-                            ),
-                            child: const Icon(
-                              Icons.verified_rounded,
-                              color: AppColors.green,
-                              size: 46,
-                            ),
-                          ),
-                          const SizedBox(height: 22),
-                          Text(
-                            S.tr('userSafeTitle'),
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              color: AppColors.white,
-                              fontSize: 20,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: -0.3,
-                              height: 1.2,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            S.trWith('userSafeMessage', {'name': displayName}),
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: AppColors.muted,
-                              fontSize: 15,
-                              height: 1.45,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const SizedBox(height: 28),
-                          SizedBox(
-                            width: double.infinity,
-                            height: 54,
-                            child: DecoratedBox(
-                              decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                  colors: [
-                                    Color(0xFF34D399),
-                                    Color(0xFF059669),
-                                  ],
-                                ),
-                                borderRadius: BorderRadius.circular(16),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: AppColors.green.withValues(
-                                      alpha: 0.35,
-                                    ),
-                                    blurRadius: 18,
-                                    offset: const Offset(0, 6),
-                                  ),
-                                ],
-                              ),
-                              child: Material(
-                                color: Colors.transparent,
-                                child: InkWell(
-                                  onTap: closeAndGoHome,
-                                  borderRadius: BorderRadius.circular(16),
-                                  child: Center(
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        const Icon(
-                                          Icons.home_rounded,
-                                          color: Colors.white,
-                                          size: 22,
-                                        ),
-                                        const SizedBox(width: 10),
-                                        Text(
-                                          S.tr('home'),
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.w800,
-                                            fontSize: 16,
-                                            letterSpacing: 0.2,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
-      );
+      await showUserSafeCompletedDialog(context, displayName: displayName);
     });
   }
 
@@ -299,15 +153,49 @@ class _ResponderMapScreenState extends State<ResponderMapScreen> {
     });
   }
 
-  static const double _mapAvatarSize = 48;
+  /// Avatar sul pin: stesso approccio di [ProfileScreen] / auth — cerchio,
+  /// [BoxFit.cover] + [Alignment.center], senza zoom artificiale che taglia il viso.
+  static const double _mapAvatarSize = 58;
+  /// Larga abbastanza per avatar + bordo + ombra (~82px) e per etichette senza
+  /// far crescere la [Column] oltre il box del [Marker] (altrimenti lo Stack taglia i lati).
+  static const double _mapMarkerWidth = 100;
+  static const double _mapMarkerHeight = 108;
+  static const double _mapPinDotSize = 11;
 
-  /// Avatar tondo sulla mappa: l’immagine (anche quadrata in origine) viene
-  /// riempita e ritagliata in cerchio; niente doppio clip che distorce il layout.
-  Widget _mapRoundAvatar({
+  Widget _mapPinThumbnail({
+    required BuildContext context,
     required String? photoUrl,
     required Color accent,
     required Widget fallback,
   }) {
+    Widget imageChild(String url) {
+      return Image.network(
+        url,
+        width: _mapAvatarSize,
+        height: _mapAvatarSize,
+        fit: BoxFit.cover,
+        alignment: Alignment.center,
+        filterQuality: FilterQuality.medium,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return ColoredBox(
+            color: accent.withValues(alpha: 0.45),
+            child: Center(
+              child: SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white.withValues(alpha: 0.9),
+                ),
+              ),
+            ),
+          );
+        },
+        errorBuilder: (context, error, stackTrace) => fallback,
+      );
+    }
+
     return Container(
       width: _mapAvatarSize,
       height: _mapAvatarSize,
@@ -316,41 +204,37 @@ class _ResponderMapScreenState extends State<ResponderMapScreen> {
         border: Border.all(color: Colors.white, width: 3),
         boxShadow: [
           BoxShadow(
-            color: accent.withValues(alpha: 0.55),
-            blurRadius: 14,
-            offset: const Offset(0, 3),
+            color: accent.withValues(alpha: 0.45),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       clipBehavior: Clip.antiAlias,
       child: (photoUrl != null && photoUrl.isNotEmpty)
-          ? Image.network(
-              photoUrl,
-              width: _mapAvatarSize,
-              height: _mapAvatarSize,
-              fit: BoxFit.cover,
-              alignment: Alignment.center,
-              gaplessPlayback: true,
-              filterQuality: FilterQuality.medium,
-              loadingBuilder: (context, child, loadingProgress) {
-                if (loadingProgress == null) return child;
-                return ColoredBox(
-                  color: accent.withValues(alpha: 0.45),
-                  child: Center(
-                    child: SizedBox(
-                      width: 22,
-                      height: 22,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white.withValues(alpha: 0.9),
-                      ),
-                    ),
-                  ),
-                );
-              },
-              errorBuilder: (context, error, stackTrace) => fallback,
-            )
+          ? imageChild(photoUrl)
           : fallback,
+    );
+  }
+
+  /// Punto sulla coordinata: con [Marker.alignment] bottomCenter il bordo
+  /// inferiore del marker coincide col punto sulla mappa.
+  Widget _mapPinDot(Color accent) {
+    return Container(
+      width: _mapPinDotSize,
+      height: _mapPinDotSize,
+      decoration: BoxDecoration(
+        color: accent,
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.white, width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.25),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
     );
   }
 
@@ -442,87 +326,51 @@ class _ResponderMapScreenState extends State<ResponderMapScreen> {
                   userAgentPackageName: 'com.gio.helpme',
                 ),
                 MarkerLayer(
+                  alignment: Alignment.bottomCenter,
                   markers: [
-                    // Vittima in pericolo: foto profilo (cerchio) se presente nell'emergenza
+                    // Vittima: avatar rotondo + etichetta + puntino sulla coordinata
                     Marker(
                       point: victim,
-                      width: 76,
-                      height: 80,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          _mapRoundAvatar(
-                            photoUrl: _victimPhotoUrl,
-                            accent: AppColors.red,
-                            fallback: const DecoratedBox(
-                              decoration: BoxDecoration(
-                                gradient: AppColors.gradientRed,
-                              ),
-                              child: Center(
-                                child: Icon(
-                                  Icons.person_pin_circle,
-                                  color: Colors.white,
-                                  size: 26,
-                                ),
-                              ),
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.red,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              _name.toUpperCase(),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 8,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    // Tu (risponditore): stesso stile tondo con foto profilo account
-                    if (me != null)
-                      Marker(
-                        point: me,
-                        width: 76,
-                        height: 80,
+                      width: _mapMarkerWidth,
+                      height: _mapMarkerHeight,
+                      alignment: Alignment.bottomCenter,
+                      child: SizedBox(
+                        width: _mapMarkerWidth,
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            _mapRoundAvatar(
-                              photoUrl:
-                                  FirebaseAuth.instance.currentUser?.photoURL,
-                              accent: AppColors.blue,
-                              fallback: const ColoredBox(
-                                color: AppColors.blue,
+                            _mapPinThumbnail(
+                              context: context,
+                              photoUrl: _victimPhotoUrl,
+                              accent: AppColors.red,
+                              fallback: const DecoratedBox(
+                                decoration: BoxDecoration(
+                                  gradient: AppColors.gradientRed,
+                                ),
                                 child: Center(
                                   child: Icon(
-                                    Icons.person,
+                                    Icons.person_pin_circle,
                                     color: Colors.white,
-                                    size: 26,
+                                    size: 28,
                                   ),
                                 ),
                               ),
                             ),
+                            const SizedBox(height: 4),
                             Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 6,
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: AppColors.blue,
+                                color: AppColors.red,
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
-                                S.tr('you'),
+                                _name.toUpperCase(),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.center,
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 8,
@@ -530,7 +378,65 @@ class _ResponderMapScreenState extends State<ResponderMapScreen> {
                                 ),
                               ),
                             ),
+                            const SizedBox(height: 5),
+                            _mapPinDot(AppColors.red),
                           ],
+                        ),
+                      ),
+                    ),
+                    if (me != null)
+                      Marker(
+                        point: me,
+                        width: _mapMarkerWidth,
+                        height: _mapMarkerHeight,
+                        alignment: Alignment.bottomCenter,
+                        child: SizedBox(
+                          width: _mapMarkerWidth,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              _mapPinThumbnail(
+                                context: context,
+                                photoUrl:
+                                    FirebaseAuth.instance.currentUser?.photoURL,
+                                accent: AppColors.blue,
+                                fallback: const ColoredBox(
+                                  color: AppColors.blue,
+                                  child: Center(
+                                    child: Icon(
+                                      Icons.person,
+                                      color: Colors.white,
+                                      size: 28,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppColors.blue,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  S.tr('you'),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 8,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 5),
+                              _mapPinDot(AppColors.blue),
+                            ],
+                          ),
                         ),
                       ),
                   ],
