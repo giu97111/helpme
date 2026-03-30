@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
+import '../widgets/app_logo.dart';
 import '../widgets/language_sheet.dart';
 
 /// Blocca l'app finché l'email non è verificata (Firebase Auth).
@@ -71,6 +72,23 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen>
     setState(() => _checkBusy = true);
     try {
       await u.reload();
+      if (!mounted) return;
+      final fresh = FirebaseAuth.instance.currentUser;
+      if (fresh != null && !fresh.emailVerified) {
+        await showDialog<void>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: Text(S.tr('verifyEmailNotVerifiedTitle')),
+            content: Text(S.tr('verifyEmailNotVerifiedBody')),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: Text(MaterialLocalizations.of(ctx).okButtonLabel),
+              ),
+            ],
+          ),
+        );
+      }
     } finally {
       if (mounted) setState(() => _checkBusy = false);
     }
@@ -114,8 +132,8 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen>
       body: Container(
         decoration: const BoxDecoration(gradient: AppColors.gradientBg),
         child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -138,19 +156,8 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen>
                     ),
                   ],
                 ),
-                const SizedBox(height: 24),
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: AppColors.red.withValues(alpha: 0.12),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.mark_email_unread_outlined,
-                    color: AppColors.red,
-                    size: 48,
-                  ),
-                ),
+                const SizedBox(height: 16),
+                const Center(child: AppLogo(size: 96)),
                 const SizedBox(height: 28),
                 Text(
                   S.tr('verifyEmailTitle'),
@@ -171,28 +178,51 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen>
                     height: 1.5,
                   ),
                 ),
-                const Spacer(),
-                SizedBox(
-                  height: 52,
-                  child: ElevatedButton(
-                    onPressed: _checkBusy ? null : _reloadUser,
-                    child: _checkBusy
-                        ? const SizedBox(
-                            width: 22,
-                            height: 22,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : Text(S.tr('verifyEmailCheck')),
+                const SizedBox(height: 16),
+                Text(
+                  S.tr('verifyEmailSpamHint'),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: AppColors.muted.withValues(alpha: 0.9),
+                    fontSize: 14,
+                    height: 1.45,
                   ),
+                ),
+                const SizedBox(height: 32),
+                ElevatedButton(
+                  onPressed: _checkBusy ? null : _reloadUser,
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(56),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
+                  ),
+                  child: _checkBusy
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Text(
+                          S.tr('verifyEmailCheck'),
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                        ),
                 ),
                 const SizedBox(height: 12),
                 OutlinedButton(
-                  onPressed: (_resendBusy || _cooldown > 0) ? null : _resend,
+                  onPressed:
+                      (_resendBusy || _cooldown > 0) ? null : _resend,
                   style: OutlinedButton.styleFrom(
-                    minimumSize: const Size.fromHeight(52),
+                    minimumSize: const Size.fromHeight(56),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
                   ),
                   child: _resendBusy
                       ? const SizedBox(
@@ -208,19 +238,27 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen>
                               ? S.trWith(
                                   'verifyEmailCooldown', {'n': '$_cooldown'})
                               : S.tr('verifyEmailResend'),
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
                         ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
                 TextButton(
                   onPressed: (_checkBusy || _resendBusy)
                       ? null
                       : () => FirebaseAuth.instance.signOut(),
+                  style: TextButton.styleFrom(
+                    minimumSize: const Size.fromHeight(48),
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                  ),
                   child: Text(
                     S.tr('verifyEmailSignOut'),
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
                     style: const TextStyle(color: AppColors.muted),
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 24),
               ],
             ),
           ),

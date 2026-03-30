@@ -14,6 +14,7 @@ import 'screens/responder_map_screen.dart';
 import 'services/notification_service.dart';
 import 'services/user_service.dart';
 import 'theme/app_theme.dart';
+import 'widgets/app_logo.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -248,69 +249,26 @@ class _ScudoAppState extends State<ScudoApp> {
   }
 }
 
-class _LoadingLogo extends StatefulWidget {
+class _LoadingLogo extends StatelessWidget {
   const _LoadingLogo();
-  @override
-  State<_LoadingLogo> createState() => _LoadingLogoState();
-}
-
-class _LoadingLogoState extends State<_LoadingLogo>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _ctrl;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1500),
-    )..repeat(reverse: true);
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _ctrl,
-      builder: (context, child) {
-        final glow = 0.2 + _ctrl.value * 0.5;
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: AppColors.gradientRedDeep,
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.red.withValues(alpha: glow),
-                    blurRadius: 30,
-                    spreadRadius: 5,
-                  ),
-                ],
-              ),
-              child: const Icon(Icons.shield, color: Colors.white, size: 36),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'SCUDO',
-              style: TextStyle(
-                color: AppColors.white.withValues(alpha: 0.9),
-                fontSize: 28,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 8,
-              ),
-            ),
-          ],
-        );
-      },
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const AppLogo(size: 88, showShadow: true),
+        const SizedBox(height: 24),
+        Text(
+          'SCUDO',
+          style: TextStyle(
+            color: AppColors.white.withValues(alpha: 0.9),
+            fontSize: 28,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 8,
+          ),
+        ),
+      ],
     );
   }
 }

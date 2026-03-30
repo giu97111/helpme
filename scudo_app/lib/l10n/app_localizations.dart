@@ -123,6 +123,11 @@ class S {
       'verifyEmailSignOut': 'Esci',
       'verifyEmailCooldown': 'Riprova tra {n} s',
       'verifyEmailSent': 'Email di verifica inviata.',
+      'verifyEmailSpamHint':
+          'Se non arriva, controlla anche spam e posta indesiderata.',
+      'verifyEmailNotVerifiedTitle': 'Email non ancora verificata',
+      'verifyEmailNotVerifiedBody':
+          'Assicurati di aver toccato il link nell\'email che ti abbiamo inviato. Se l\'hai già fatto, attendi qualche secondo e riprova, oppure controlla spam e posta indesiderata.',
       'forgotPassword': 'Password dimenticata?',
       'resetPasswordTitle': 'Recupera password',
       'resetPasswordHint':
@@ -230,6 +235,11 @@ class S {
       'verifyEmailSignOut': 'Sign out',
       'verifyEmailCooldown': 'Try again in {n} s',
       'verifyEmailSent': 'Verification email sent.',
+      'verifyEmailSpamHint':
+          'If you don\'t see it, check spam and junk folders.',
+      'verifyEmailNotVerifiedTitle': 'Not verified yet',
+      'verifyEmailNotVerifiedBody':
+          'Make sure you tapped the link in the email we sent. If you already did, wait a few seconds and try again, or check spam and junk folders.',
       'forgotPassword': 'Forgot password?',
       'resetPasswordTitle': 'Reset password',
       'resetPasswordHint':
@@ -338,6 +348,11 @@ class S {
       'verifyEmailSignOut': 'Cerrar sesión',
       'verifyEmailCooldown': 'Reintenta en {n} s',
       'verifyEmailSent': 'Correo de verificación enviado.',
+      'verifyEmailSpamHint':
+          'Si no lo ves, revisa también spam y correo no deseado.',
+      'verifyEmailNotVerifiedTitle': 'Aún no verificado',
+      'verifyEmailNotVerifiedBody':
+          'Asegúrate de haber tocado el enlace del correo que te enviamos. Si ya lo hiciste, espera unos segundos e inténtalo de nuevo, o revisa spam y correo no deseado.',
       'forgotPassword': '¿Olvidaste la contraseña?',
       'resetPasswordTitle': 'Recuperar contraseña',
       'resetPasswordHint':
@@ -447,6 +462,11 @@ class S {
       'verifyEmailSignOut': 'Abmelden',
       'verifyEmailCooldown': 'Erneut in {n} s',
       'verifyEmailSent': 'Bestätigungs-E-Mail gesendet.',
+      'verifyEmailSpamHint':
+          'Falls sie nicht ankommt, prüfe auch Spam und Junk.',
+      'verifyEmailNotVerifiedTitle': 'Noch nicht bestätigt',
+      'verifyEmailNotVerifiedBody':
+          'Stelle sicher, dass du den Link in unserer E-Mail angetippt hast. Wenn du das schon getan hast, warte kurz und versuche es erneut, oder prüfe Spam und Junk.',
       'forgotPassword': 'Passwort vergessen?',
       'resetPasswordTitle': 'Passwort zurücksetzen',
       'resetPasswordHint':

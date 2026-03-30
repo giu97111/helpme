@@ -7,6 +7,7 @@ import '../l10n/app_localizations.dart';
 import '../services/profile_photo_service.dart';
 import '../services/user_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/app_logo.dart';
 import '../widgets/glass_container.dart';
 import '../widgets/language_sheet.dart';
 
@@ -16,8 +17,7 @@ class AuthScreen extends StatefulWidget {
   State<AuthScreen> createState() => _AuthScreenState();
 }
 
-class _AuthScreenState extends State<AuthScreen>
-    with SingleTickerProviderStateMixin {
+class _AuthScreenState extends State<AuthScreen> {
   final _email = TextEditingController();
   final _password = TextEditingController();
   final _confirmPassword = TextEditingController();
@@ -26,18 +26,8 @@ class _AuthScreenState extends State<AuthScreen>
   bool _register = false;
   bool _loading = false;
   String? _error;
-  late final AnimationController _pulse;
   XFile? _signupPhoto;
   Uint8List? _signupPhotoBytes;
-
-  @override
-  void initState() {
-    super.initState();
-    _pulse = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 5),
-    )..repeat();
-  }
 
   @override
   void dispose() {
@@ -45,7 +35,6 @@ class _AuthScreenState extends State<AuthScreen>
     _password.dispose();
     _confirmPassword.dispose();
     _name.dispose();
-    _pulse.dispose();
     super.dispose();
   }
 
@@ -309,33 +298,10 @@ class _AuthScreenState extends State<AuthScreen>
                       child: Column(
                         children: [
                           const SizedBox(height: 20),
-                          // Animated logo
-                          SizedBox(
-                            height: 160,
-                            child: Stack(
-                              alignment: Alignment.center,
-                              children: [
-                                PulseRings(
-                                    animation: _pulse, maxSize: 160),
-                                Container(
-                                  width: 80,
-                                  height: 80,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    gradient: AppColors.gradientRedDeep,
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: AppColors.red
-                                            .withValues(alpha: 0.4),
-                                        blurRadius: 30,
-                                        spreadRadius: 2,
-                                      ),
-                                    ],
-                                  ),
-                                  child: const Icon(Icons.shield,
-                                      size: 38, color: Colors.white),
-                                ),
-                              ],
+                          const SizedBox(
+                            height: 140,
+                            child: Center(
+                              child: AppLogo(size: 112),
                             ),
                           ),
                           const SizedBox(height: 8),

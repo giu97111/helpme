@@ -1,7 +1,9 @@
 import 'dart:io';
+import 'dart:ui' show Color;
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 final _local = FlutterLocalNotificationsPlugin();
@@ -14,13 +16,27 @@ const _androidChannel = AndroidNotificationChannel(
 );
 
 class NotificationService {
+  static const _logoAssetPath = 'assets/logo.jpg';
+  static Uint8List? _notificationLogoBytes;
+
+  static Future<void> _loadNotificationLogo() async {
+    try {
+      final data = await rootBundle.load(_logoAssetPath);
+      _notificationLogoBytes = data.buffer.asUint8List();
+    } catch (e) {
+      debugPrint('[Scudo FCM] logo notifiche non caricato: $e');
+    }
+  }
+
   static Future<void> init() async {
     await _local.initialize(
       const InitializationSettings(
-        android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+        // Stessa icona monocromatica delle FCM in background (drawable nativo).
+        android: AndroidInitializationSettings('@drawable/ic_notification'),
         iOS: DarwinInitializationSettings(),
       ),
     );
+    await _loadNotificationLogo();
 
     if (Platform.isAndroid) {
       await _local
@@ -79,6 +95,11 @@ class NotificationService {
               channelDescription: _androidChannel.description,
               importance: Importance.max,
               priority: Priority.high,
+              icon: 'ic_notification',
+              color: const Color(0xFFFF3B30),
+              largeIcon: _notificationLogoBytes != null
+                  ? ByteArrayAndroidBitmap(_notificationLogoBytes!)
+                  : null,
             ),
           ),
           payload: message.data['emergencyId'],

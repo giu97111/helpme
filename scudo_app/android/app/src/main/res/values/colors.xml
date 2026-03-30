@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Colore accento notifiche (FCM / tray), allineato al tema Scudo -->
+    <color name="scudo_notification">#FFFF3B30</color>
+	<color name="ic_launcher_background">#080C18</color>
+</resources>

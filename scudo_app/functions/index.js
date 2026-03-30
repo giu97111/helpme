@@ -4,15 +4,30 @@
  *
  * Raggio default: 2000 m (puoi abbassare a 500 in produzione).
  *
- * Test con due telefoni lontani geograficamente:
- *   firebase functions:config:set scudo.broadcast_all="true"
+ * Test con due telefoni lontani geograficamente: in functions/.env imposta
+ *   SCUDO_BROADCAST_ALL=true
+ * poi dalla cartella scudo_app (dove c’è firebase.json):
  *   firebase deploy --only functions
- * Disattiva:
- *   firebase functions:config:unset scudo
+ *
+ * Immagine grande nelle push: URL HTTPS pubblico in functions/.env
+ *   SCUDO_NOTIFICATION_IMAGE_URL=https://...
+ *
+ * Deploy: sempre da scudo_app, altrimenti "No targets match --only functions".
  */
 
 const admin = require('firebase-admin');
 const functions = require('firebase-functions/v1');
+const {defineBoolean, defineString} = require('firebase-functions/params');
+
+/** Modalità test: invia FCM a tutti (ignora distanza). */
+const scudoBroadcastAll = defineBoolean('SCUDO_BROADCAST_ALL', {
+  default: false,
+});
+
+/** URL HTTPS pubblico del logo per FCM (opzionale). */
+const scudoNotificationImageUrl = defineString('SCUDO_NOTIFICATION_IMAGE_URL', {
+  default: '',
+});
 const https = require('https');
 const path = require('path');
 const fs = require('fs');
@@ -156,9 +171,18 @@ exports.notifyNearbyOnEmergency = functions
         return;
       }
 
-      const cfg = functions.config();
-      const broadcastAll =
-        cfg.scudo && String(cfg.scudo.broadcast_all).toLowerCase() === 'true';
+      const broadcastAll = scudoBroadcastAll.value();
+      const notificationImageUrl = scudoNotificationImageUrl.value().trim();
+      if (notificationImageUrl) {
+        console.log(
+            `notifyNearbyOnEmergency: immagine notifica (FCM image)=${notificationImageUrl.substring(0, 48)}…`,
+        );
+      } else {
+        console.log(
+            'notifyNearbyOnEmergency: nessun URL immagine (opzionale) — ' +
+          'solo icona scudo nelle push. Imposta scudo.notification_image_url per il logo.',
+        );
+      }
 
       if (broadcastAll) {
         console.log(
@@ -259,6 +283,30 @@ exports.notifyNearbyOnEmergency = functions
       let successCount = 0;
       let failureCount = 0;
 
+      /** @type {{channel_id: string, icon: string, color: string, image?: string}} */
+      const androidNotification = {
+        channel_id: 'scudo_sos',
+        icon: 'ic_notification',
+        color: '#FF3B30',
+      };
+      if (notificationImageUrl) {
+        androidNotification.image = notificationImageUrl;
+      }
+
+      /** @type {Record<string, unknown>} */
+      const apns = {
+        payload: {
+          aps: {
+            sound: 'default',
+            badge: 1,
+          },
+        },
+      };
+      if (notificationImageUrl) {
+        apns.payload.aps['mutable-content'] = 1;
+        apns.fcm_options = {image: notificationImageUrl};
+      }
+
       for (let i = 0; i < uniqueTokens.length; i++) {
         const payload = JSON.stringify({
           message: {
@@ -266,6 +314,7 @@ exports.notifyNearbyOnEmergency = functions
             notification: {
               title: 'Richiesta di aiuto nelle vicinanze',
               body: `${displayName} potrebbe aver bisogno di te.`,
+              image: notificationImageUrl || undefined,
             },
             data: {
               emergencyId: String(emergencyId),
@@ -273,15 +322,9 @@ exports.notifyNearbyOnEmergency = functions
             },
             android: {
               priority: 'high',
+              notification: androidNotification,
             },
-            apns: {
-              payload: {
-                aps: {
-                  sound: 'default',
-                  badge: 1,
-                },
-              },
-            },
+            apns,
           },
         });
 
