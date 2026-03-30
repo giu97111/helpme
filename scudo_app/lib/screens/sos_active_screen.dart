@@ -29,6 +29,7 @@ class _SosActiveScreenState extends State<SosActiveScreen>
   @override
   void initState() {
     super.initState();
+    EmergencyService.registerOwnSosUi(widget.emergencyId);
     _pulse = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1500),
@@ -47,6 +48,7 @@ class _SosActiveScreenState extends State<SosActiveScreen>
 
   @override
   void dispose() {
+    EmergencyService.unregisterOwnSosUi(widget.emergencyId);
     _sub?.cancel();
     _pulse.dispose();
     _ticker?.cancel();

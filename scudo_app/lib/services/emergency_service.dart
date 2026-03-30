@@ -56,4 +56,18 @@ class EmergencyService {
   static Stream<QuerySnapshot<Map<String, dynamic>>> activeEmergenciesStream() {
     return _col.where('status', isEqualTo: 'active').snapshots();
   }
+
+  /// Se valorizzato, l’utente è sulla schermata SOS propria ([SosActiveScreen]):
+  /// le notifiche verso la mappa di un altro allarme non devono sostituirla.
+  static String? ownSosUiEmergencyId;
+
+  static void registerOwnSosUi(String emergencyId) {
+    ownSosUiEmergencyId = emergencyId;
+  }
+
+  static void unregisterOwnSosUi(String emergencyId) {
+    if (ownSosUiEmergencyId == emergencyId) {
+      ownSosUiEmergencyId = null;
+    }
+  }
 }

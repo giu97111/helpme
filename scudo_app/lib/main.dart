@@ -15,6 +15,7 @@ import 'screens/email_verification_screen.dart';
 import 'screens/logged_in_shell.dart';
 import 'screens/responder_map_screen.dart';
 import 'services/account_deletion_guard.dart';
+import 'services/emergency_service.dart';
 import 'services/notification_service.dart';
 import 'services/user_service.dart';
 import 'theme/app_theme.dart';
@@ -26,16 +27,24 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 }
 
-void _openEmergencyFromMessage(RemoteMessage? message) {
+void _openResponderMapFromEmergencyId(String id) {
   final u = FirebaseAuth.instance.currentUser;
   if (u == null || !u.emailVerified) return;
-  final id = message?.data['emergencyId'] as String?;
-  if (id == null || id.isEmpty) return;
+  if (EmergencyService.ownSosUiEmergencyId != null &&
+      EmergencyService.ownSosUiEmergencyId!.isNotEmpty) {
+    return;
+  }
   navigatorKey.currentState?.push<void>(
     MaterialPageRoute<void>(
       builder: (_) => ResponderMapScreen(emergencyId: id),
     ),
   );
+}
+
+void _openEmergencyFromMessage(RemoteMessage? message) {
+  final id = message?.data['emergencyId'] as String?;
+  if (id == null || id.isEmpty) return;
+  _openResponderMapFromEmergencyId(id);
 }
 
 /// Se l’utente è stato rimosso da Firebase Auth (console o altro client), la
@@ -200,7 +209,12 @@ class _ScudoAppState extends State<ScudoApp> {
   Future<void> _bootstrapNotifications() async {
     debugPrint('[Scudo] avvio servizi notifiche (non blocca UI)...');
     try {
-      await NotificationService.init();
+      await NotificationService.init(
+        onLocalNotificationTap: (payload) {
+          if (payload == null || payload.isEmpty) return;
+          _openResponderMapFromEmergencyId(payload);
+        },
+      );
       NotificationService.onForegroundMessage((_) {});
       NotificationService.onMessageOpenedApp(_openEmergencyFromMessage);
 
@@ -278,11 +292,7 @@ class _ScudoAppState extends State<ScudoApp> {
       if (cu == null || !cu.emailVerified) return;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
-        navigatorKey.currentState?.push<void>(
-          MaterialPageRoute<void>(
-            builder: (_) => ResponderMapScreen(emergencyId: id),
-          ),
-        );
+        _openResponderMapFromEmergencyId(id);
       });
     }
 

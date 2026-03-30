@@ -1,14 +1,10 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:ui' show Color;
 
 import 'package:app_badge_plus/app_badge_plus.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-
-import '../branding.dart';
 
 final _local = FlutterLocalNotificationsPlugin();
 
@@ -29,18 +25,9 @@ class NotificationService {
   static String? _lastForegroundMessageId;
   static DateTime? _lastForegroundMessageIdAt;
 
-  static Uint8List? _notificationLogoBytes;
-
-  static Future<void> _loadNotificationLogo() async {
-    try {
-      final data = await rootBundle.load(kAppLogoAsset);
-      _notificationLogoBytes = data.buffer.asUint8List();
-    } catch (e) {
-      debugPrint('[Scudo FCM] logo notifiche non caricato: $e');
-    }
-  }
-
-  static Future<void> init() async {
+  static Future<void> init({
+    void Function(String? emergencyIdPayload)? onLocalNotificationTap,
+  }) async {
     await _local.initialize(
       InitializationSettings(
         // Solo il nome risorsa (senza @drawable/): così getIdentifier() su Android trova il drawable.
@@ -58,8 +45,10 @@ class NotificationService {
               )
             : const DarwinInitializationSettings(),
       ),
+      onDidReceiveNotificationResponse: (NotificationResponse response) {
+        onLocalNotificationTap?.call(response.payload);
+      },
     );
-    await _loadNotificationLogo();
 
     if (Platform.isAndroid) {
       await _local
@@ -69,7 +58,6 @@ class NotificationService {
     }
 
     final messaging = FirebaseMessaging.instance;
-    // iOS: alert false così non duplichiamo la push di sistema; mostriamo noi la notifica locale con allegato (logo).
     if (Platform.isIOS) {
       await messaging.setForegroundNotificationPresentationOptions(
         alert: false,
@@ -80,8 +68,6 @@ class NotificationService {
     }
     if (Platform.isAndroid) {
       await FirebaseMessaging.instance.requestPermission();
-      // Come su iOS: alert false così non mostra la notifica di sistema (icona launcher / Dart);
-      // usiamo solo flutter_local_notifications con ic_notification + logo.
       await messaging.setForegroundNotificationPresentationOptions(
         alert: false,
         badge: true,
@@ -120,15 +106,6 @@ class NotificationService {
       await Future<void>.delayed(step * (i + 1));
     }
     return null;
-  }
-
-  /// File temporaneo per allegato immagine su iOS (UNNotificationAttachment).
-  static Future<String?> _logoTempPathForIos() async {
-    final bytes = _notificationLogoBytes;
-    if (bytes == null) return null;
-    final f = File('${Directory.systemTemp.path}/scudo_push_logo.jpg');
-    await f.writeAsBytes(bytes, flush: true);
-    return f.path;
   }
 
   static void onForegroundMessage(void Function(RemoteMessage) handler) {
@@ -170,55 +147,8 @@ class NotificationService {
         }
       }
 
-      final id = eid != null && eid.isNotEmpty
-          ? eid.hashCode & 0x7fffffff
-          : message.messageId?.hashCode ?? message.hashCode;
-
-      if (Platform.isAndroid) {
-        await _local.show(
-          id,
-          n.title,
-          n.body,
-          NotificationDetails(
-            android: AndroidNotificationDetails(
-              _androidChannel.id,
-              _androidChannel.name,
-              channelDescription: _androidChannel.description,
-              importance: Importance.max,
-              priority: Priority.high,
-              icon: 'ic_notification',
-              color: const Color(0xFFFF3B30),
-              largeIcon: _notificationLogoBytes != null
-                  ? ByteArrayAndroidBitmap(_notificationLogoBytes!)
-                  : null,
-            ),
-          ),
-          payload: message.data['emergencyId'],
-        );
-      } else if (Platform.isIOS) {
-        final logoPath = await _logoTempPathForIos();
-        await _local.show(
-          id,
-          n.title,
-          n.body,
-          NotificationDetails(
-            iOS: DarwinNotificationDetails(
-              // Un solo banner: evita banner + lista + alert duplicati in centro notifiche.
-              presentAlert: false,
-              presentBanner: true,
-              presentList: false,
-              presentSound: true,
-              presentBadge: true,
-              attachments: logoPath != null
-                  ? <DarwinNotificationAttachment>[
-                      DarwinNotificationAttachment(logoPath),
-                    ]
-                  : null,
-            ),
-          ),
-          payload: message.data['emergencyId'],
-        );
-      }
+      // In foreground: niente banner / schermata allarme; il badge è aggiornato da
+      // [LoggedInShell] in base alle emergenze attive vicine.
 
       handler(message);
     });
@@ -240,6 +170,18 @@ class NotificationService {
       }
     } catch (e) {
       debugPrint('[Scudo FCM] clearLauncherBadge: $e');
+    }
+  }
+
+  /// Imposta il numero sull’icona (es. emergenze vicine attive).
+  static Future<void> updateLauncherBadge(int count) async {
+    if (kIsWeb) return;
+    try {
+      if (await AppBadgePlus.isSupported()) {
+        await AppBadgePlus.updateBadge(count < 0 ? 0 : count);
+      }
+    } catch (e) {
+      debugPrint('[Scudo FCM] updateLauncherBadge: $e');
     }
   }
 }

@@ -88,18 +88,25 @@ class _LoggedInShellState extends State<LoggedInShell> {
       if (_shownEmergencyIds.contains(doc.id)) continue;
       _shownEmergencyIds.add(doc.id);
       if (!mounted) return;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        Navigator.of(context).push<void>(
-          MaterialPageRoute<void>(
-            builder: (_) => HelpAlertScreen(emergencyId: doc.id),
-          ),
-        );
-      });
+      final inForeground =
+          WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
+      if (!inForeground) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          Navigator.of(context).push<void>(
+            MaterialPageRoute<void>(
+              builder: (_) => HelpAlertScreen(emergencyId: doc.id),
+            ),
+          );
+        });
+      }
     }
 
     if (mounted && nearbyCount != _nearbyEmergencyCount) {
       setState(() => _nearbyEmergencyCount = nearbyCount);
+    }
+    if (mounted) {
+      unawaited(NotificationService.updateLauncherBadge(nearbyCount));
     }
   }
 

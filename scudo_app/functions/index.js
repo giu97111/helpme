@@ -410,12 +410,19 @@ exports.notifyNearbyOnEmergency = functions
         androidNotification.image = notificationImageUrl;
       }
 
+      // iOS: icona notifica = AppIcon (non c’è drawable come Android). Subtitle “Scudo”
+      // come brand (simile a label rossa + icona su Android).
       /** @type {Record<string, unknown>} */
       const apns = {
         payload: {
           aps: {
             sound: 'default',
             badge: 1,
+            alert: {
+              title: 'Richiesta di aiuto nelle vicinanze',
+              subtitle: 'Scudo',
+              body: `${displayName} potrebbe aver bisogno di te.`,
+            },
           },
         },
       };
